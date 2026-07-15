@@ -1,0 +1,42 @@
+---
+description: Styling conventions — CSS custom properties, class names, and Tailwind usage
+globs: **/*.tsx,**/*.css
+alwaysApply: false
+---
+
+# Styling Conventions
+
+## CSS Custom Properties (use these, never hardcode colors)
+```
+--bg-base, --bg-elevated, --bg-surface
+--text-primary, --text-secondary, --text-tertiary
+--border-default, --border-subtle
+--accent, --success, --warning, --danger
+```
+
+## Utility Class Naming (defined in index.css)
+| Class | Purpose |
+|-------|---------|
+| `kpi` | KPI metric card |
+| `kpi-label`, `kpi-value`, `kpi-delta` | KPI sub-elements |
+| `panel` | Content card / section |
+| `panel-title` | Panel heading |
+| `panel-action` | Inline link action |
+| `grid grid-4` | 4-column responsive grid |
+| `grid grid-asym-2` | Asymmetric 2-column (chart + sidebar) |
+| `dashboard` | Page wrapper |
+| `dash-header`, `dash-title`, `dash-subtitle` | Page header |
+| `tbl` | Styled table |
+| `badge badge-danger/warning/neutral` | Status badges |
+| `dot dot-success/warning/danger` | Status indicator dots |
+| `mono` | Monospace text span |
+| `burn-grid`, `burn-bar`, `burn-fill` | SLO burn rate bars |
+| `dep-row` | Dependency row |
+
+## Tailwind
+Tailwind v4 is available but used sparingly — only for layout utilities not covered by the CSS class system above.  
+Do NOT use Tailwind for colors or typography; use CSS variables and the existing class system.
+
+## Fonts
+- Body/UI: `IBM Plex Sans, sans-serif`
+- Monospace/numbers: `IBM Plex Mono, monospace` (class `mono` or inline `fontFamily`)

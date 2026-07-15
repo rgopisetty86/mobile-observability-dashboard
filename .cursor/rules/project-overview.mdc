@@ -1,0 +1,35 @@
+---
+description: Project structure, stack, and key conventions for mobile-observability-dashboard
+alwaysApply: true
+---
+
+# Mobile Observability Dashboard — Project Context
+
+## Stack
+- React 19, TypeScript 6, Vite 8
+- Tailwind CSS v4 (via `@tailwindcss/vite` plugin — no `tailwind.config.js`)
+- Recharts v3 for all charts
+- React Router v7 (not yet wired; navigation is state-driven in `App.tsx`)
+
+## Source Layout
+```
+src/
+  App.tsx           # Root: ThemeContext provider + section state + keyboard nav
+  context/          # ThemeContext (isDark + toggle)
+  hooks/            # useDarkMode, useChartColors
+  pages/            # One file per persona dashboard (SRE, Engineering, Product, Security, Executive)
+  components/
+    layout/         # Sidebar, Topbar, Layout
+    charts/         # ChartTooltip (shared tooltip component)
+  data/             # mockData.ts — all mock data lives here
+  types/            # Shared TypeScript interfaces (Metric, Session, Crash, etc.)
+  index.css         # All CSS custom properties and utility classes
+```
+
+## Navigation
+Sections are `'sre' | 'engineering' | 'product' | 'security' | 'executive'` (type `Section` in `App.tsx`).  
+Switch via `setSection` prop or keyboard shortcuts `1–5`.
+
+## Mock Data
+All mock data is inline in each page file or in `src/data/mockData.ts`.  
+No real API calls — placeholder for Prometheus / Datadog / Amplitude connections.

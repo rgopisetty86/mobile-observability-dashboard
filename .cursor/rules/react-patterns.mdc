@@ -1,0 +1,46 @@
+---
+description: React and TypeScript component conventions for this project
+globs: **/*.tsx,**/*.ts
+alwaysApply: false
+---
+
+# React & TypeScript Patterns
+
+## General
+- Functional components only, default exports for pages, named exports for shared components
+- No semicolons — project uses semicolon-free TypeScript style
+- Props typed inline or with a local `interface`, never `FC<Props>` wrapper
+
+## Charts (Recharts)
+Every chart follows this pattern:
+```tsx
+const c = useChartColors()  // always get colors from this hook — never hardcode hex values
+
+<ResponsiveContainer width="100%" height="100%">
+  <LineChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
+    <CartesianGrid stroke={c.grid} vertical={false} />
+    <XAxis dataKey="time" tick={{ fontSize: 10, fontFamily: 'IBM Plex Mono, monospace', fill: c.text }} axisLine={{ stroke: c.grid }} tickLine={false} />
+    <YAxis tick={tickStyle} axisLine={false} tickLine={false} />
+    <Tooltip content={<ChartTooltip formatter={(v) => `${v}s`} />} />
+  </LineChart>
+</ResponsiveContainer>
+```
+
+Key rules:
+- Always wrap charts in `<ResponsiveContainer width="100%" height="100%">`
+- Always use `<ChartTooltip>` from `../components/charts/ChartTooltip` — never use Recharts default tooltip
+- Chart colors come exclusively from `useChartColors()` — tokens: `accent`, `success`, `warning`, `danger`, `purple`, `teal`, `muted`, `grid`, `text`
+- `tickStyle` = `{ fontSize: 10, fontFamily: 'IBM Plex Mono, monospace', fill: c.text }`
+
+## New Dashboard Pages
+Each page exports a default component named `<Name>Dashboard`, wraps content in:
+```tsx
+<section className="dashboard">
+  <div className="dash-header">...</div>
+  {/* KPIs grid, panels, charts */}
+</section>
+```
+
+## Theme
+Access dark mode via `useTheme()` from `../context/ThemeContext` (returns `{ isDark, toggle }`).  
+`useChartColors()` already consumes `useTheme` internally — don't duplicate.
