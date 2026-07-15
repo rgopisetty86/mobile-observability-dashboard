@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
+
 import {
   BarChart, Bar, Cell,
   AreaChart, Area,
@@ -11,8 +13,6 @@ import { useEngineeringData } from '../hooks/useEngineeringData'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-type FilterKey = 'platform' | 'version' | 'os' | 'deviceTier'
-
 interface FilterState {
   platform: string
   version:  string
@@ -23,45 +23,70 @@ interface FilterState {
 interface DropdownOption { label: string; value: string }
 
 // ── FilterPill ─────────────────────────────────────────────────────────────
+// Renders its dropdown via a React portal at document.body so it is never
+// clipped by overflow:hidden ancestors or trapped in a stacking context.
 
 function FilterPill({
-  label, value, options, isOpen, onToggle, onChange,
+  label, value, options, onChange,
 }: {
   label: string
   value: string
   options: DropdownOption[]
-  isOpen: boolean
-  onToggle: () => void
   onChange: (v: string) => void
 }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [dropPos, setDropPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 })
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const dropRef = useRef<HTMLDivElement>(null)
+
+  const open = () => {
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect()
+      setDropPos({ top: r.bottom + 6, left: r.left })
+    }
+    setIsOpen(true)
+  }
+  const close = () => setIsOpen(false)
+
+  // Close on click outside both the trigger and the portal dropdown
+  useEffect(() => {
+    if (!isOpen) return
+    const handler = (e: MouseEvent) => {
+      const t = e.target as Node
+      if (!btnRef.current?.contains(t) && !dropRef.current?.contains(t)) close()
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [isOpen])
+
   const isActive = value !== 'all'
-  const display = isActive ? `${label}: ${value}` : `${label}: all`
+  const display  = isActive ? `${label}: ${value}` : `${label}: all`
 
   return (
-    <div style={{ position: 'relative' }}>
+    <>
       <button
+        ref={btnRef}
         className={`filter-pill${isActive ? ' active' : ''}`}
-        onClick={onToggle}
+        onClick={() => (isOpen ? close() : open())}
         style={{ display: 'flex', alignItems: 'center', gap: 4 }}
       >
         {display}
         <span style={{ opacity: 0.5, fontSize: 9 }}>▾</span>
       </button>
 
-      {isOpen && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 200,
+      {isOpen && createPortal(
+        <div ref={dropRef} style={{
+          position: 'fixed', top: dropPos.top, left: dropPos.left, zIndex: 9999,
           background: 'var(--bg-elevated)',
           border: '1px solid var(--border-default)',
-          borderRadius: 8,
-          padding: '4px 0',
-          minWidth: 160,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+          borderRadius: 8, padding: '4px 0', minWidth: 160,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
         }}>
           {options.map(opt => (
             <button
               key={opt.value}
-              onClick={() => { onChange(opt.value); onToggle() }}
+              onMouseDown={e => e.stopPropagation()}
+              onClick={() => { onChange(opt.value); close() }}
               style={{
                 display: 'block', width: '100%', textAlign: 'left',
                 padding: '7px 14px', background: 'none', border: 'none',
@@ -74,9 +99,10 @@ function FilterPill({
               {opt.label}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   )
 }
 
@@ -120,25 +146,9 @@ export default function EngineeringDashboard() {
   const [filters, setFilters] = useState<FilterState>({
     platform: 'all', version: 'all', os: 'all', deviceTier: 'all',
   })
-  const [openFilter, setOpenFilter] = useState<FilterKey | null>(null)
-  const filterRowRef = useRef<HTMLDivElement>(null)
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (filterRowRef.current && !filterRowRef.current.contains(e.target as Node)) {
-        setOpenFilter(null)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
-
-  const setFilter = (key: FilterKey) => (value: string) =>
+  const setFilter = (key: keyof FilterState) => (value: string) =>
     setFilters(f => ({ ...f, [key]: value }))
-
-  const toggleFilter = (key: FilterKey) =>
-    setOpenFilter(prev => prev === key ? null : key)
 
   // Version options derived from live data
   const versionOpts: DropdownOption[] = [
@@ -178,31 +188,11 @@ export default function EngineeringDashboard() {
       </div>
 
       {/* Filters */}
-      <div ref={filterRowRef} className="filter-row" style={{ marginBottom: 16, alignItems: 'center' }}>
-        <FilterPill
-          label="platform" value={filters.platform} options={PLATFORM_OPTS}
-          isOpen={openFilter === 'platform'}
-          onToggle={() => toggleFilter('platform')}
-          onChange={setFilter('platform')}
-        />
-        <FilterPill
-          label="version" value={filters.version} options={versionOpts}
-          isOpen={openFilter === 'version'}
-          onToggle={() => toggleFilter('version')}
-          onChange={setFilter('version')}
-        />
-        <FilterPill
-          label="os" value={filters.os} options={OS_OPTS}
-          isOpen={openFilter === 'os'}
-          onToggle={() => toggleFilter('os')}
-          onChange={setFilter('os')}
-        />
-        <FilterPill
-          label="device tier" value={filters.deviceTier} options={DEVICE_TIER_OPTS}
-          isOpen={openFilter === 'deviceTier'}
-          onToggle={() => toggleFilter('deviceTier')}
-          onChange={setFilter('deviceTier')}
-        />
+      <div className="filter-row" style={{ marginBottom: 16, alignItems: 'center' }}>
+        <FilterPill label="platform"    value={filters.platform}    options={PLATFORM_OPTS}     onChange={setFilter('platform')} />
+        <FilterPill label="version"     value={filters.version}     options={versionOpts}        onChange={setFilter('version')} />
+        <FilterPill label="os"          value={filters.os}          options={OS_OPTS}            onChange={setFilter('os')} />
+        <FilterPill label="device tier" value={filters.deviceTier}  options={DEVICE_TIER_OPTS}  onChange={setFilter('deviceTier')} />
         {activeFilterCount > 0 && (
           <button
             onClick={() => setFilters({ platform: 'all', version: 'all', os: 'all', deviceTier: 'all' })}
