@@ -16,12 +16,19 @@ alwaysApply: true
 src/
   App.tsx           # Root: ThemeContext provider + section state + keyboard nav
   context/          # ThemeContext (isDark + toggle)
-  hooks/            # useDarkMode, useChartColors
+  lib/
+    firebase.ts     # Firebase app init + Firestore export (reads VITE_FIREBASE_* env vars)
+  hooks/
+    useDarkMode.ts
+    useChartColors.ts
+    useFirestore.ts       # Generic useDocument<T> / useCollection<T> with onSnapshot
+    useEngineeringData.ts # Domain hook for Engineering dashboard Firestore reads
+    useSecurityData.ts    # Domain hook for Security dashboard Firestore reads
   pages/            # One file per persona dashboard (SRE, Engineering, Product, Security, Executive)
   components/
     layout/         # Sidebar, Topbar, Layout
     charts/         # ChartTooltip (shared tooltip component)
-  data/             # mockData.ts — all mock data lives here
+  data/             # mockData.ts — fallback/reference mock data
   types/            # Shared TypeScript interfaces (Metric, Session, Crash, etc.)
   index.css         # All CSS custom properties and utility classes
 ```
@@ -30,6 +37,36 @@ src/
 Sections are `'sre' | 'engineering' | 'product' | 'security' | 'executive'` (type `Section` in `App.tsx`).  
 Switch via `setSection` prop or keyboard shortcuts `1–5`.
 
+## Firebase / Firestore Integration
+Engineering and Security dashboards are wired to live Firestore real-time subscriptions.
+
+**Config** — create `.env.local` at the project root (never commit):
+```
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_APP_ID=
+```
+
+**Data layer pattern:**
+1. `src/lib/firebase.ts` — initializes Firebase once, exports `db` and `isConfigured`
+2. `src/hooks/useFirestore.ts` — `useDocument<T>(path)` and `useCollection<T>(path, orderByField?)`, both returning `{ data, loading, error }`
+3. Domain hooks (`useEngineeringData`, `useSecurityData`) compose the generic hooks and provide typed fallback mock data when Firebase is unconfigured or loading
+
+**Firestore schema** (Engineering):
+- `analytics/crashes/kpis/current` — `{ crashFree, anrFree, affectedUsers, newSignatures }`
+- `analytics/crashes/signatures` — collection ordered by `order` field
+- `analytics/crashes/versions` — collection ordered by `order` field
+- `analytics/crashes/trend` — collection ordered by `order` field
+
+**Firestore schema** (Security):
+- `analytics/security/kpis/current` — `{ mfaFatigue, geoImpossibilities, integrityViolations, accountsLocked, activeInvestigations }`
+- `analytics/security/threats` — collection ordered by `order` field
+- `analytics/security/integrity` — collection ordered by `order` field (stores `colorToken: 'warning'|'danger'`, resolved to CSS var by `resolveColor()`)
+- `analytics/security/events` — collection ordered by `order` field
+
+**When Firebase is not configured** — dashboards display built-in mock values; no error is thrown. The console emits one warning.
+
 ## Mock Data
-All mock data is inline in each page file or in `src/data/mockData.ts`.  
-No real API calls — placeholder for Prometheus / Datadog / Amplitude connections.
+SRE, Product, and Executive dashboards still use inline mock data.  
+Engineering and Security mock data lives in their domain hooks as typed fallback constants.

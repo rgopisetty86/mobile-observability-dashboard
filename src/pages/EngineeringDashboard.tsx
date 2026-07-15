@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from 'react'
 import {
   BarChart, Bar, Cell,
   AreaChart, Area,
@@ -6,51 +7,101 @@ import {
 } from 'recharts'
 import { ChartTooltip } from '../components/charts/ChartTooltip'
 import { useChartColors } from '../hooks/useChartColors'
+import { useEngineeringData } from '../hooks/useEngineeringData'
 
-const crashByVersion = [
-  { version: 'v4.10',   rate: 0.4 },
-  { version: 'v4.11',   rate: 0.3 },
-  { version: 'v4.12.0', rate: 0.4 },
-  { version: 'v4.12.1', rate: 0.9 },
+// ── Types ──────────────────────────────────────────────────────────────────
+
+type FilterKey = 'platform' | 'version' | 'os' | 'deviceTier'
+
+interface FilterState {
+  platform: string
+  version:  string
+  os:       string
+  deviceTier: string
+}
+
+interface DropdownOption { label: string; value: string }
+
+// ── FilterPill ─────────────────────────────────────────────────────────────
+
+function FilterPill({
+  label, value, options, isOpen, onToggle, onChange,
+}: {
+  label: string
+  value: string
+  options: DropdownOption[]
+  isOpen: boolean
+  onToggle: () => void
+  onChange: (v: string) => void
+}) {
+  const isActive = value !== 'all'
+  const display = isActive ? `${label}: ${value}` : `${label}: all`
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        className={`filter-pill${isActive ? ' active' : ''}`}
+        onClick={onToggle}
+        style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+      >
+        {display}
+        <span style={{ opacity: 0.5, fontSize: 9 }}>▾</span>
+      </button>
+
+      {isOpen && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 200,
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border-default)',
+          borderRadius: 8,
+          padding: '4px 0',
+          minWidth: 160,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+        }}>
+          {options.map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => { onChange(opt.value); onToggle() }}
+              style={{
+                display: 'block', width: '100%', textAlign: 'left',
+                padding: '7px 14px', background: 'none', border: 'none',
+                cursor: 'pointer', fontSize: 12,
+                fontFamily: 'IBM Plex Mono, monospace',
+                color: opt.value === value ? 'var(--accent)' : 'var(--text-primary)',
+                fontWeight: opt.value === value ? 600 : 400,
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Static filter option definitions ──────────────────────────────────────
+
+const PLATFORM_OPTS: DropdownOption[] = [
+  { label: 'all platforms', value: 'all' },
+  { label: 'iOS',           value: 'iOS' },
+  { label: 'Android',       value: 'Android' },
 ]
 
-const crashTrendData = [
-  { day: '-14d', rate: 99.97 },
-  { day: '-12d', rate: 99.96 },
-  { day: '-10d', rate: 99.97 },
-  { day: '-8d',  rate: 99.96 },
-  { day: '-6d',  rate: 99.97 },
-  { day: '-4d',  rate: 99.96 },
-  { day: '-2d',  rate: 99.95 },
-  { day: 'today',rate: 99.91 },
+const OS_OPTS: DropdownOption[] = [
+  { label: 'all OS versions', value: 'all' },
+  { label: 'iOS 17',          value: 'iOS 17' },
+  { label: 'Android 12',      value: 'Android 12' },
+  { label: 'Android 14',      value: 'Android 14' },
 ]
 
-const topCrashes = [
-  {
-    name: 'EXC_BAD_ACCESS', platform: 'iOS · 17.4+ only', highlight: true,
-    frame: 'KeychainStore.fetchSecret(_:)',
-    count: '1,247', users: '1,089',
-    delta: '↑ NEW', deltaColor: 'var(--danger)',
-  },
-  {
-    name: 'NullPointerException', platform: 'Android · all versions', highlight: false,
-    frame: 'BiometricPrompt.authenticate',
-    count: '684', users: '612',
-    delta: '↑ 12%', deltaColor: 'var(--warning)',
-  },
-  {
-    name: 'SIGSEGV', platform: 'Android · low-tier devices', highlight: false,
-    frame: 'QRScannerView.onCameraFrame',
-    count: '412', users: '398',
-    delta: '↓ 8%', deltaColor: 'var(--success)',
-  },
-  {
-    name: 'OutOfMemoryError', platform: 'Android 12', highlight: false,
-    frame: 'AccountListAdapter.bindView',
-    count: '203', users: '198',
-    delta: 'flat', deltaColor: 'var(--text-secondary)',
-  },
+const DEVICE_TIER_OPTS: DropdownOption[] = [
+  { label: 'all device tiers', value: 'all' },
+  { label: 'high-tier',        value: 'high' },
+  { label: 'low-tier',         value: 'low' },
 ]
+
+// ── Stack trace ────────────────────────────────────────────────────────────
 
 const stackTrace = `Thread 0 Crashed:
 0   Authenticator   0x0000000104b2c1d4   <span class="crash-frame">KeychainStore.fetchSecret(_:) + 84</span>
@@ -60,100 +111,204 @@ const stackTrace = `Thread 0 Crashed:
 4   SwiftUI         0x00000001a8c4d918   <span class="sys-frame">ViewRendererHost.layoutSubviews() + 96</span>
 5   UIKitCore       0x00000001892b1240   <span class="sys-frame">UIView.layoutIfNeeded() + 188</span>`
 
+// ── Component ──────────────────────────────────────────────────────────────
+
 export default function EngineeringDashboard() {
   const c = useChartColors()
+  const { loading, kpis, signatures, versions, trend } = useEngineeringData()
+
+  const [filters, setFilters] = useState<FilterState>({
+    platform: 'all', version: 'all', os: 'all', deviceTier: 'all',
+  })
+  const [openFilter, setOpenFilter] = useState<FilterKey | null>(null)
+  const filterRowRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (filterRowRef.current && !filterRowRef.current.contains(e.target as Node)) {
+        setOpenFilter(null)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const setFilter = (key: FilterKey) => (value: string) =>
+    setFilters(f => ({ ...f, [key]: value }))
+
+  const toggleFilter = (key: FilterKey) =>
+    setOpenFilter(prev => prev === key ? null : key)
+
+  // Version options derived from live data
+  const versionOpts: DropdownOption[] = [
+    { label: 'all versions', value: 'all' },
+    ...versions.map(v => ({ label: v.version, value: v.version })),
+  ]
+
+  // ── Filter logic ─────────────────────────────────────────────────────────
+
+  const filteredSignatures = signatures.filter(sig => {
+    if (filters.platform !== 'all' && !sig.platform.includes(filters.platform)) return false
+    if (filters.os !== 'all' && !sig.platform.includes(filters.os)) return false
+    if (filters.deviceTier === 'low' && !sig.platform.includes('low-tier')) return false
+    if (filters.deviceTier === 'high' && sig.platform.includes('low-tier')) return false
+    return true
+  })
+
+  // Version filter highlights a bar; all bars still shown for context
+  const barFill = (ver: string, i: number) => {
+    if (filters.version !== 'all') return ver === filters.version ? c.danger : c.muted
+    return i === versions.length - 1 ? c.danger : c.muted
+  }
+
   const tickStyle = { fontSize: 10, fontFamily: 'IBM Plex Mono, monospace', fill: c.text }
+  const placeholder = loading ? '—' : null
+
+  const activeFilterCount = Object.values(filters).filter(v => v !== 'all').length
 
   return (
     <section className="dashboard">
       <div className="dash-header">
         <div className="dash-title">Crash explorer</div>
-        <div className="dash-subtitle">Release regression triage · last 24h</div>
+        <div className="dash-subtitle">
+          Release regression triage · last 24h
+          {loading && <span style={{ color: 'var(--text-tertiary)', fontSize: 10, marginLeft: 8 }}>syncing…</span>}
+        </div>
       </div>
 
       {/* Filters */}
-      <div className="filter-row" style={{ marginBottom: 16 }}>
-        <span className="filter-pill">platform: all</span>
-        <span className="filter-pill active">version: 4.12.1</span>
-        <span className="filter-pill">os: all</span>
-        <span className="filter-pill">device tier: all</span>
+      <div ref={filterRowRef} className="filter-row" style={{ marginBottom: 16, alignItems: 'center' }}>
+        <FilterPill
+          label="platform" value={filters.platform} options={PLATFORM_OPTS}
+          isOpen={openFilter === 'platform'}
+          onToggle={() => toggleFilter('platform')}
+          onChange={setFilter('platform')}
+        />
+        <FilterPill
+          label="version" value={filters.version} options={versionOpts}
+          isOpen={openFilter === 'version'}
+          onToggle={() => toggleFilter('version')}
+          onChange={setFilter('version')}
+        />
+        <FilterPill
+          label="os" value={filters.os} options={OS_OPTS}
+          isOpen={openFilter === 'os'}
+          onToggle={() => toggleFilter('os')}
+          onChange={setFilter('os')}
+        />
+        <FilterPill
+          label="device tier" value={filters.deviceTier} options={DEVICE_TIER_OPTS}
+          isOpen={openFilter === 'deviceTier'}
+          onToggle={() => toggleFilter('deviceTier')}
+          onChange={setFilter('deviceTier')}
+        />
+        {activeFilterCount > 0 && (
+          <button
+            onClick={() => setFilters({ platform: 'all', version: 'all', os: 'all', deviceTier: 'all' })}
+            style={{
+              marginLeft: 4, background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: 11, color: 'var(--text-tertiary)', fontFamily: 'IBM Plex Mono, monospace',
+              padding: '5px 8px',
+            }}
+          >
+            clear all ✕
+          </button>
+        )}
       </div>
 
       {/* KPIs */}
       <div className="grid grid-4">
         <div className="kpi">
           <div className="kpi-label">Crash-free sessions</div>
-          <div className="kpi-value">99.91%</div>
+          <div className="kpi-value">{placeholder ?? kpis.crashFree}</div>
           <div className="kpi-delta delta-down">↓ 0.06% vs v4.12.0</div>
         </div>
         <div className="kpi">
           <div className="kpi-label">ANR-free sessions</div>
-          <div className="kpi-value">99.85%</div>
+          <div className="kpi-value">{placeholder ?? kpis.anrFree}</div>
           <div className="kpi-delta delta-flat">flat vs prior</div>
         </div>
         <div className="kpi">
           <div className="kpi-label">Affected users (24h)</div>
-          <div className="kpi-value">2,847</div>
+          <div className="kpi-value">{placeholder ?? kpis.affectedUsers}</div>
           <div className="kpi-delta delta-down">↑ 38% week-over-week</div>
         </div>
         <div className="kpi">
           <div className="kpi-label">New signatures</div>
-          <div className="kpi-value">3</div>
+          <div className="kpi-value">{placeholder ?? kpis.newSignatures}</div>
           <div className="kpi-delta delta-warn">first seen in v4.12.1</div>
         </div>
       </div>
 
       {/* Top Crash Signatures */}
       <div className="panel">
-        <div className="panel-title">Top crash signatures</div>
-        <table className="tbl">
-          <thead>
-            <tr>
-              <th>Signature</th>
-              <th>Top frame</th>
-              <th style={{ textAlign: 'right' }}>Count</th>
-              <th style={{ textAlign: 'right' }}>Users</th>
-              <th style={{ textAlign: 'right' }}>Δ 24h</th>
-            </tr>
-          </thead>
-          <tbody>
-            {topCrashes.map(crash => (
-              <tr key={crash.name} className={crash.highlight ? 'highlight' : ''}>
-                <td>
-                  <div style={{ fontWeight: 500, color: crash.highlight ? 'var(--danger)' : 'inherit' }}>
-                    {crash.name}
-                  </div>
-                  <div style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{crash.platform}</div>
-                </td>
-                <td><span className="mono" style={{ fontSize: 11 }}>{crash.frame}</span></td>
-                <td className="num" style={{ fontWeight: crash.highlight ? 500 : 'normal' }}>{crash.count}</td>
-                <td className="num">{crash.users}</td>
-                <td className="num" style={{ color: crash.deltaColor, fontWeight: crash.highlight ? 500 : 'normal' }}>
-                  {crash.delta}
-                </td>
+        <div className="panel-title">
+          <span>Top crash signatures</span>
+          {activeFilterCount > 0 && (
+            <span style={{ color: 'var(--text-tertiary)', fontSize: 11, fontWeight: 400 }}>
+              {filteredSignatures.length} of {signatures.length} shown
+            </span>
+          )}
+        </div>
+        {filteredSignatures.length === 0 ? (
+          <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 12 }}>
+            No crashes match the active filters.
+          </div>
+        ) : (
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th>Signature</th>
+                <th>Top frame</th>
+                <th style={{ textAlign: 'right' }}>Count</th>
+                <th style={{ textAlign: 'right' }}>Users</th>
+                <th style={{ textAlign: 'right' }}>Δ 24h</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredSignatures.map(crash => (
+                <tr key={crash.name} className={crash.highlight ? 'highlight' : ''}>
+                  <td>
+                    <div style={{ fontWeight: 500, color: crash.highlight ? 'var(--danger)' : 'inherit' }}>
+                      {crash.name}
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{crash.platform}</div>
+                  </td>
+                  <td><span className="mono" style={{ fontSize: 11 }}>{crash.frame}</span></td>
+                  <td className="num" style={{ fontWeight: crash.highlight ? 500 : 'normal' }}>{crash.count}</td>
+                  <td className="num">{crash.users}</td>
+                  <td className="num" style={{ color: crash.deltaColor, fontWeight: crash.highlight ? 500 : 'normal' }}>
+                    {crash.delta}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* Charts */}
       <div className="grid grid-2 row-gap">
         <div className="panel" style={{ marginTop: 0 }}>
-          <div className="panel-title">Crash rate by app version</div>
+          <div className="panel-title">
+            Crash rate by app version
+            {filters.version !== 'all' && (
+              <span style={{ color: 'var(--accent)', fontSize: 11, fontWeight: 400 }}>
+                · {filters.version} highlighted
+              </span>
+            )}
+          </div>
           <div className="chart-wrap">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={crashByVersion} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
+              <BarChart data={versions} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
                 <CartesianGrid stroke={c.grid} vertical={false} />
                 <XAxis dataKey="version" tick={tickStyle} axisLine={{ stroke: c.grid }} tickLine={false} />
                 <YAxis tick={tickStyle} axisLine={false} tickLine={false} tickFormatter={v => v.toFixed(1)} />
                 <Tooltip content={<ChartTooltip formatter={v => v.toFixed(1)} />} />
                 <Bar dataKey="rate" radius={[3, 3, 0, 0]} maxBarSize={50}>
-                  {crashByVersion.map((_, i) => (
-                    <Cell
-                      key={i}
-                      fill={i === crashByVersion.length - 1 ? c.danger : c.muted}
-                    />
+                  {versions.map((entry, i) => (
+                    <Cell key={i} fill={barFill(entry.version, i)} />
                   ))}
                 </Bar>
               </BarChart>
@@ -165,7 +320,7 @@ export default function EngineeringDashboard() {
           <div className="panel-title">Crash-free sessions trend (14d)</div>
           <div className="chart-wrap">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={crashTrendData} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
+              <AreaChart data={trend} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
                 <defs>
                   <linearGradient id="crashTrendGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%"  stopColor={c.accent} stopOpacity={0.15} />

@@ -461,7 +461,9 @@ body {
   border: 1px solid var(--border-default);
   font-family: 'IBM Plex Mono', monospace; font-weight: 400;
   transition: all 0.15s;
-  cursor: default;
+  cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  line-height: inherit; text-align: left;
 }
 .filter-pill.active {
   background: var(--accent-soft); color: var(--accent);
