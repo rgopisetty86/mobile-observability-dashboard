@@ -465,9 +465,18 @@ body {
   appearance: none; -webkit-appearance: none;
   line-height: inherit; text-align: left;
 }
+.filter-pill:hover:not(.active) {
+  background: var(--bg-elevated); color: var(--text-primary);
+  border-color: var(--border-strong);
+}
 .filter-pill.active {
   background: var(--accent-soft); color: var(--accent);
   border-color: rgba(79,158,255,0.25); font-weight: 500;
+}
+
+/* ─── Filter dropdown options ─────────────────────────────────────────────── */
+.filter-option:hover {
+  background: var(--bg-elevated) !important;
 }
 
 /* ─── Scorecard rows ──────────────────────────────────────────────────────── */

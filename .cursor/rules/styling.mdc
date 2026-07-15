@@ -8,11 +8,58 @@ alwaysApply: false
 
 ## CSS Custom Properties (use these, never hardcode colors)
 ```
---bg-base, --bg-elevated, --bg-surface
+--bg-app, --bg-sidebar, --bg-surface, --bg-elevated
 --text-primary, --text-secondary, --text-tertiary
---border-default, --border-subtle
---accent, --success, --warning, --danger
+--border-subtle, --border-default, --border-strong
+--accent, --accent-soft, --success, --warning, --danger
 ```
+
+### Opacity / transparency gotcha
+`--bg-elevated` is `rgba(255,255,255,0.08)` in dark mode — nearly transparent.  
+**Never use it as a dropdown, popover, or modal background** — content behind will bleed through.  
+Use `--bg-sidebar` (solid `#080b14` dark / `#ffffff` light) for any floating surface that must be opaque.
+
+## Floating Surfaces (dropdowns, popovers, tooltips)
+Use this exact pattern — **do not use `position: absolute`** for any floating UI:
+
+```tsx
+import { createPortal } from 'react-dom'
+
+// Inside component: capture trigger position when opening
+const r = btnRef.current.getBoundingClientRect()
+setDropPos({ top: r.bottom + 6, left: r.left })
+
+// Render at document.body to bypass overflow:hidden and stacking contexts
+{isOpen && createPortal(
+  <div style={{
+    position: 'fixed', top: dropPos.top, left: dropPos.left, zIndex: 9999,
+    background: 'var(--bg-sidebar)',          // opaque — never --bg-elevated
+    border: '1px solid var(--border-strong)',
+    borderRadius: 10,
+    boxShadow: '0 16px 48px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.06) inset',
+  }}>
+    {/* options */}
+  </div>,
+  document.body
+)}
+```
+
+**Why:** `.main { overflow-x: hidden }` creates a scroll container that clips `position: absolute` children. `.dashboard { animation: fadeIn }` creates a temporary CSS stacking context. Portals with `position: fixed` bypass both.
+
+Close-on-outside-click must check BOTH the trigger ref AND the portal ref:
+```tsx
+useEffect(() => {
+  if (!isOpen) return
+  const handler = (e: MouseEvent) => {
+    const t = e.target as Node
+    if (!btnRef.current?.contains(t) && !dropRef.current?.contains(t)) close()
+  }
+  document.addEventListener('mousedown', handler)
+  return () => document.removeEventListener('mousedown', handler)
+}, [isOpen])
+```
+
+CSS classes for dropdown options: `filter-option` (hover state defined in index.css).
 
 ## Utility Class Naming (defined in index.css)
 | Class | Purpose |
@@ -32,6 +79,10 @@ alwaysApply: false
 | `mono` | Monospace text span |
 | `burn-grid`, `burn-bar`, `burn-fill` | SLO burn rate bars |
 | `dep-row` | Dependency row |
+| `filter-row` | Flex row wrapping filter pills |
+| `filter-pill` | Clickable filter trigger button (use `<button>`, not `<span>`) |
+| `filter-pill active` | Active/selected filter pill state |
+| `filter-option` | Option button inside a filter dropdown (applies hover bg) |
 
 ## Tailwind
 Tailwind v4 is available but used sparingly — only for layout utilities not covered by the CSS class system above.  

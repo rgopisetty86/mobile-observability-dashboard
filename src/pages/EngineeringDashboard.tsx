@@ -77,28 +77,39 @@ function FilterPill({
       {isOpen && createPortal(
         <div ref={dropRef} style={{
           position: 'fixed', top: dropPos.top, left: dropPos.left, zIndex: 9999,
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border-default)',
-          borderRadius: 8, padding: '4px 0', minWidth: 160,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+          background: 'var(--bg-sidebar)',
+          border: '1px solid var(--border-strong)',
+          borderRadius: 10, padding: '6px 0', minWidth: 168,
+          boxShadow: '0 16px 48px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.06) inset',
         }}>
-          {options.map(opt => (
-            <button
-              key={opt.value}
-              onMouseDown={e => e.stopPropagation()}
-              onClick={() => { onChange(opt.value); close() }}
-              style={{
-                display: 'block', width: '100%', textAlign: 'left',
-                padding: '7px 14px', background: 'none', border: 'none',
-                cursor: 'pointer', fontSize: 12,
-                fontFamily: 'IBM Plex Mono, monospace',
-                color: opt.value === value ? 'var(--accent)' : 'var(--text-primary)',
-                fontWeight: opt.value === value ? 600 : 400,
-              }}
-            >
-              {opt.label}
-            </button>
-          ))}
+          {options.map(opt => {
+            const selected = opt.value === value
+            return (
+              <button
+                key={opt.value}
+                className={selected ? undefined : 'filter-option'}
+                onMouseDown={e => e.stopPropagation()}
+                onClick={() => { onChange(opt.value); close() }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  width: '100%', textAlign: 'left',
+                  padding: '8px 14px',
+                  background: selected ? 'var(--accent-soft)' : 'none',
+                  border: 'none', cursor: 'pointer', fontSize: 12,
+                  fontFamily: 'IBM Plex Mono, monospace',
+                  color: selected ? 'var(--accent)' : 'var(--text-primary)',
+                  fontWeight: selected ? 600 : 400,
+                }}
+              >
+                <span style={{
+                  width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+                  background: selected ? 'var(--accent)' : 'transparent',
+                  border: selected ? 'none' : '1px solid var(--border-default)',
+                }} />
+                {opt.label}
+              </button>
+            )
+          })}
         </div>,
         document.body
       )}
