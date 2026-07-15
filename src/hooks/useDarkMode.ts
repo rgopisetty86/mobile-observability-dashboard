@@ -2,21 +2,14 @@ import { useState, useEffect } from 'react'
 
 export function useDarkMode() {
   const [isDark, setIsDark] = useState<boolean>(() => {
-    const stored = localStorage.getItem('theme')
-    if (stored) return stored === 'dark'
-    return window.matchMedia('(prefers-color-scheme: dark)').matches
+    try { return (localStorage.getItem('obs-theme') ?? 'dark') !== 'light' } catch { return true }
   })
 
   useEffect(() => {
-    const root = document.documentElement
-    if (isDark) {
-      root.classList.add('dark')
-      localStorage.setItem('theme', 'dark')
-    } else {
-      root.classList.remove('dark')
-      localStorage.setItem('theme', 'light')
-    }
+    const theme = isDark ? 'dark' : 'light'
+    document.documentElement.setAttribute('data-theme', theme)
+    try { localStorage.setItem('obs-theme', theme) } catch {}
   }, [isDark])
 
-  return { isDark, toggle: () => setIsDark((prev) => !prev) }
+  return { isDark, toggle: () => setIsDark(v => !v) }
 }

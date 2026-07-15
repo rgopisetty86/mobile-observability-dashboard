@@ -1,82 +1,98 @@
-import { NavLink } from 'react-router-dom'
+import type { Section } from '../../App'
+import { useTheme } from '../../context/ThemeContext'
 
-const navItems = [
+interface SidebarProps {
+  active: Section
+  onSelect: (s: Section) => void
+}
+
+const navItems: { id: Section; label: string; shortcut: string; icon: React.ReactNode }[] = [
   {
-    to: '/',
-    label: 'Overview',
+    id: 'sre', label: 'SRE', shortcut: '1',
     icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7m-9 2v8m4-8v8m5 0H3" />
+      <svg className="ico nav-icon" viewBox="0 0 24 24">
+        <path d="M3 12h4l3-9 4 18 3-9h4" />
       </svg>
     ),
   },
   {
-    to: '/sessions',
-    label: 'Sessions',
+    id: 'engineering', label: 'Engineering', shortcut: '2',
     icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197" />
+      <svg className="ico nav-icon" viewBox="0 0 24 24">
+        <path d="M14.7 6.3a4 4 0 0 1 5 5L8 23l-5 1 1-5L14.7 6.3z" />
+        <path d="m14 6 4 4" />
       </svg>
     ),
   },
   {
-    to: '/crashes',
-    label: 'Crashes',
+    id: 'product', label: 'Product', shortcut: '3',
     icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+      <svg className="ico nav-icon" viewBox="0 0 24 24">
+        <path d="M3 3v18h18" /><path d="m7 14 4-4 4 4 5-5" />
       </svg>
     ),
   },
   {
-    to: '/performance',
-    label: 'Performance',
+    id: 'security', label: 'Security', shortcut: '4',
     icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+      <svg className="ico nav-icon" viewBox="0 0 24 24">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        <path d="m9 12 2 2 4-4" />
+      </svg>
+    ),
+  },
+  {
+    id: 'executive', label: 'Executive', shortcut: '5',
+    icon: (
+      <svg className="ico nav-icon" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" />
       </svg>
     ),
   },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ active, onSelect }: SidebarProps) {
+  const { isDark, toggle } = useTheme()
+
   return (
-    <aside className="hidden md:flex flex-col w-60 min-h-screen bg-gray-900 border-r border-gray-800 shrink-0">
-      {/* Logo */}
-      <div className="flex items-center gap-2.5 px-5 py-5 border-b border-gray-800">
-        <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">
-          M
+    <aside className="sidebar">
+      <div className="brand">
+        <div className="brand-mark">A</div>
+        <div className="brand-text">
+          <span className="brand-name">Authenticator</span>
+          <span className="brand-sub">Observability</span>
         </div>
-        <span className="text-sm font-semibold text-white leading-tight">
-          Mobile<br />
-          <span className="text-indigo-400 font-normal text-xs tracking-wide uppercase">Observability</span>
-        </span>
       </div>
 
-      {/* Nav links */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === '/'}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-indigo-500/15 text-indigo-400'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
-              }`
-            }
+      <div className="nav-section">
+        <div className="nav-label">Dashboards</div>
+        {navItems.map(item => (
+          <button
+            key={item.id}
+            className={`nav-item${active === item.id ? ' active' : ''}`}
+            onClick={() => onSelect(item.id)}
           >
             {item.icon}
-            {item.label}
-          </NavLink>
+            <span>{item.label}</span>
+            <span className="nav-shortcut">{item.shortcut}</span>
+          </button>
         ))}
-      </nav>
+      </div>
 
-      {/* Footer */}
-      <div className="px-5 py-4 border-t border-gray-800">
-        <p className="text-xs text-gray-500">v1.0.0 · Jul 2026</p>
+      <div className="sidebar-footer">
+        <button className="theme-toggle" onClick={toggle}>
+          <svg className="ico" viewBox="0 0 24 24">
+            {isDark
+              ? <><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></>
+              : <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            }
+          </svg>
+          <span>{isDark ? 'Light mode' : 'Dark mode'}</span>
+        </button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
+          <span>v1.0 · sample data</span>
+          <span style={{ color: 'var(--text-tertiary)', fontSize: 10 }}>keys 1–5</span>
+        </div>
       </div>
     </aside>
   )
