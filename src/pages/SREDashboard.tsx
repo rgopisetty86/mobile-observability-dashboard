@@ -1,3 +1,4 @@
+import React from 'react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
@@ -57,8 +58,16 @@ const alerts = [
 
 export default function SREDashboard() {
   const c = useChartColors()
+  const [activeSeverity, setActiveSeverity] = React.useState<string | null>(null)
 
   const tickStyle = { fontSize: 10, fontFamily: 'IBM Plex Mono, monospace', fill: c.text }
+
+  const visibleAlerts = activeSeverity
+    ? alerts.filter(a => a.badge === activeSeverity)
+    : alerts
+
+  const toggleSeverity = (badge: string) =>
+    setActiveSeverity(prev => (prev === badge ? null : badge))
 
   return (
     <section className="dashboard">
@@ -162,16 +171,44 @@ export default function SREDashboard() {
         <table className="tbl">
           <thead>
             <tr>
-              <th style={{ width: 90 }}>Severity</th>
+              <th style={{ width: 90 }}>
+                Severity
+                {activeSeverity && (
+                  <button
+                    onClick={() => setActiveSeverity(null)}
+                    style={{
+                      marginLeft: 6, fontSize: 10, cursor: 'pointer',
+                      color: 'var(--text-secondary)', background: 'none',
+                      border: 'none', padding: 0, fontFamily: 'IBM Plex Sans, sans-serif',
+                    }}
+                    title="Clear filter"
+                  >
+                    ✕ clear
+                  </button>
+                )}
+              </th>
               <th>Alert</th>
               <th style={{ width: 100 }}>Age</th>
               <th style={{ width: 80 }} />
             </tr>
           </thead>
           <tbody>
-            {alerts.map((a, i) => (
+            {visibleAlerts.map((a, i) => (
               <tr key={i}>
-                <td><span className={`badge ${a.badge}`}>{a.badgeLabel}</span></td>
+                <td>
+                  <button
+                    className={`badge ${a.badge}`}
+                    onClick={() => toggleSeverity(a.badge)}
+                    title={activeSeverity === a.badge ? 'Clear filter' : `Filter by ${a.badgeLabel}`}
+                    style={{
+                      cursor: 'pointer', border: 'none', fontFamily: 'inherit',
+                      outline: activeSeverity === a.badge ? '2px solid currentColor' : 'none',
+                      outlineOffset: 2,
+                    }}
+                  >
+                    {a.badgeLabel}
+                  </button>
+                </td>
                 <td>{a.text}</td>
                 <td className="mono" style={{ color: 'var(--text-secondary)' }}>{a.age}</td>
                 <td><a className="panel-action" href="#">{a.action}</a></td>
