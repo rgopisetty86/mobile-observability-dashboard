@@ -18,12 +18,17 @@ src/
   context/          # ThemeContext (isDark + toggle)
   lib/
     firebase.ts     # Firebase app init + Firestore export (reads VITE_FIREBASE_* env vars)
+    datadog.ts      # Datadog Metrics API fetch wrapper (reads VITE_DATADOG_* env vars)
   hooks/
     useDarkMode.ts
     useChartColors.ts
-    useFirestore.ts       # Generic useDocument<T> / useCollection<T> with onSnapshot
-    useEngineeringData.ts # Domain hook for Engineering dashboard Firestore reads
-    useSecurityData.ts    # Domain hook for Security dashboard Firestore reads
+    useFirestore.ts           # Generic useDocument<T> / useCollection<T> with onSnapshot
+    useEngineeringData.ts     # Domain hook — Engineering dashboard
+    useSecurityData.ts        # Domain hook — Security dashboard
+    useSREData.ts             # Domain hook — SRE dashboard
+    useProductData.ts         # Domain hook — Product dashboard
+    useExecutiveData.ts       # Domain hook — Executive dashboard
+    useDatadogMetrics.ts      # Queries Datadog API → writes to Firestore on interval
   pages/            # One file per persona dashboard (SRE, Engineering, Product, Security, Executive)
   components/
     layout/         # Sidebar, Topbar, Layout
@@ -51,7 +56,7 @@ VITE_FIREBASE_APP_ID=
 **Data layer pattern:**
 1. `src/lib/firebase.ts` — initializes Firebase once, exports `db` and `isConfigured`
 2. `src/hooks/useFirestore.ts` — `useDocument<T>(path)` and `useCollection<T>(path, orderByField?)`, both returning `{ data, loading, error }`
-3. Domain hooks (`useEngineeringData`, `useSecurityData`) compose the generic hooks and provide typed fallback mock data when Firebase is unconfigured or loading
+3. Domain hooks compose the generic hooks and provide typed fallback mock data when Firebase is unconfigured or loading
 
 **Firestore schema** (Engineering):
 - `analytics/crashes/kpis/current` — `{ crashFree, anrFree, affectedUsers, newSignatures }`
@@ -65,8 +70,44 @@ VITE_FIREBASE_APP_ID=
 - `analytics/security/integrity` — collection ordered by `order` field (stores `colorToken: 'warning'|'danger'`, resolved to CSS var by `resolveColor()`)
 - `analytics/security/events` — collection ordered by `order` field
 
+**Firestore schema** (SRE):
+- `analytics/sre/kpis/current` — `{ crashFree, apiAvail, pushDelivery, timeToCode }`
+- `analytics/sre/latency` — collection ordered by `order` field: `{ time, p50, p95, p99 }`
+- `analytics/sre/burn` — collection ordered by `order` field: `{ label, width, value, colorToken }`
+- `analytics/sre/deps` — collection ordered by `order` field: `{ name, status, label, value }`
+- `analytics/sre/alerts` — collection ordered by `order` field: `{ badge, badgeLabel, text, age, action }`
+
+**Firestore schema** (Product):
+- `analytics/product/kpis/current` — `{ mau, dau, stickiness, d30Retention }`
+- `analytics/product/mauTrend` — collection ordered by `order` field: `{ day, mau }`
+- `analytics/product/funnel` — collection ordered by `order` field: `{ label, pct, count, drop, dropColorToken }`
+- `analytics/product/featureAdoption` — collection ordered by `order` field: `{ label, pct }`
+- `analytics/product/authMix` — collection ordered by `order` field: `{ name, value }`
+
+**Firestore schema** (Executive):
+- `analytics/executive/kpis/current` — `{ mau, installs, d30Retention, nps, rating }`
+- `analytics/executive/mauGrowth` — collection ordered by `order` field: `{ month, mau }`
+- `analytics/executive/reliability` — collection ordered by `order` field: `{ label, value, colorToken? }`
+- `analytics/executive/security` — collection ordered by `order` field: `{ label, value, colorToken? }`
+- `analytics/executive/platformMix` — collection ordered by `order` field: `{ label, pct, colorToken }`
+- `analytics/executive/regions` — collection ordered by `order` field: `{ label, value }`
+- `analytics/executive/unitEcon` — collection ordered by `order` field: `{ label, value, colorToken? }`
+
 **When Firebase is not configured** — dashboards display built-in mock values; no error is thrown. The console emits one warning.
 
+## Datadog Integration
+`useDatadogMetrics()` is mounted once in `App.tsx`. It queries Datadog on mount and every 60s, writing results into Firestore so all domain hooks pick up live values automatically.
+
+**Config** — add to `.env.local` (never commit):
+```
+VITE_DATADOG_API_KEY=
+VITE_DATADOG_APP_KEY=
+VITE_DATADOG_SITE=datadoghq.com   # or datadoghq.eu, us3.datadoghq.com, etc.
+```
+
+**Files:**
+- `src/lib/datadog.ts` — fetch wrapper for Datadog Metrics Query API v1 (`queryMetrics`, `latestValue`, `hoursAgo`, `daysAgo`)
+- `src/hooks/useDatadogMetrics.ts` — `METRIC_MAPPINGS` array maps Datadog query strings to Firestore doc paths + fields. Edit this array to add/change metrics. No-op when either Datadog or Firebase is unconfigured.
+
 ## Mock Data
-SRE, Product, and Executive dashboards still use inline mock data.  
-Engineering and Security mock data lives in their domain hooks as typed fallback constants.
+All 5 dashboards have typed fallback mock data in their domain hooks. Displayed when Firebase is unconfigured or still loading.

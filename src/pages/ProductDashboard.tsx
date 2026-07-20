@@ -7,74 +7,47 @@ import {
 } from 'recharts'
 import { ChartTooltip } from '../components/charts/ChartTooltip'
 import { useChartColors } from '../hooks/useChartColors'
-
-const mauTrendData = [
-  { day: '-90d', mau: 3.6 },
-  { day: '-75d', mau: 3.7 },
-  { day: '-60d', mau: 3.8 },
-  { day: '-45d', mau: 3.85 },
-  { day: '-30d', mau: 3.95 },
-  { day: '-15d', mau: 4.05 },
-  { day: 'today',mau: 4.2 },
-]
-
-const authMixData = [
-  { name: 'TOTP 58%',        value: 58 },
-  { name: 'Push approve 31%',value: 31 },
-  { name: 'Passkey 11%',     value: 11 },
-]
-
-const funnelSteps = [
-  { label: 'Opened add-account flow',  pct: 100, count: '128,420', drop: '—',   dropColor: 'var(--text-tertiary)' },
-  { label: 'Camera permission granted',pct: 91,  count: '116,862', drop: '−9%', dropColor: 'var(--success)' },
-  { label: 'QR scanned successfully',  pct: 73,  count: '93,747',  drop: '−20%',dropColor: 'var(--danger)' },
-  { label: 'Account confirmed',         pct: 69,  count: '88,610',  drop: '−5%', dropColor: 'var(--text-secondary)' },
-  { label: 'First code generated',      pct: 68,  count: '87,326',  drop: '−1%', dropColor: 'var(--text-secondary)' },
-  { label: 'Backup enabled',            pct: 31,  count: '39,810',  drop: '−54%',dropColor: 'var(--danger)' },
-]
-
-const featureAdoption = [
-  { label: 'Cloud backup',    pct: 62 },
-  { label: 'Biometric lock',  pct: 78 },
-  { label: 'Cross-device sync',pct: 34 },
-  { label: 'Passkey support', pct: 12 },
-  { label: 'Widget / watch',  pct: 8  },
-]
+import { useProductData, resolveDropColor } from '../hooks/useProductData'
 
 export default function ProductDashboard() {
   const c = useChartColors()
+  const { loading, kpis, mauTrend, funnelSteps, featureAdoption, authMix } = useProductData()
   const tickStyle = { fontSize: 10, fontFamily: 'IBM Plex Mono, monospace', fill: c.text }
   const authColors = [c.accent, c.success, c.purple]
   const [selectedStep, setSelectedStep] = useState<string | null>(null)
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null)
+  const placeholder = loading ? '—' : null
 
   return (
     <section className="dashboard">
       <div className="dash-header">
         <div className="dash-title">North star &amp; enrollment</div>
-        <div className="dash-subtitle">Product leadership review · last 30 days vs prior 30</div>
+        <div className="dash-subtitle">
+          Product leadership review · last 30 days vs prior 30
+          {loading && <span style={{ color: 'var(--text-tertiary)', fontSize: 10, marginLeft: 8 }}>syncing…</span>}
+        </div>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-4">
         <div className="kpi">
           <div className="kpi-label">Monthly active users</div>
-          <div className="kpi-value">4.2M</div>
+          <div className="kpi-value">{placeholder ?? kpis.mau}</div>
           <div className="kpi-delta delta-up">↑ 8.4% MoM</div>
         </div>
         <div className="kpi">
           <div className="kpi-label">Daily active users</div>
-          <div className="kpi-value">1.8M</div>
+          <div className="kpi-value">{placeholder ?? kpis.dau}</div>
           <div className="kpi-delta delta-up">↑ 6.1% MoM</div>
         </div>
         <div className="kpi">
           <div className="kpi-label">DAU / MAU stickiness</div>
-          <div className="kpi-value">43%</div>
+          <div className="kpi-value">{placeholder ?? kpis.stickiness}</div>
           <div className="kpi-delta delta-flat">flat (target 40%+)</div>
         </div>
         <div className="kpi">
           <div className="kpi-label">D30 retention</div>
-          <div className="kpi-value">67%</div>
+          <div className="kpi-value">{placeholder ?? kpis.d30Retention}</div>
           <div className="kpi-delta delta-up">↑ 3pp MoM</div>
         </div>
       </div>
@@ -84,7 +57,7 @@ export default function ProductDashboard() {
         <div className="panel-title">MAU trend (90 days)</div>
         <div className="chart-wrap">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={mauTrendData} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
+            <AreaChart data={mauTrend} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
               <defs>
                 <linearGradient id="mauGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%"  stopColor={c.accent} stopOpacity={0.15} />
@@ -98,7 +71,7 @@ export default function ProductDashboard() {
                 domain={[3.4, 'auto']}
                 tickFormatter={v => v.toFixed(1) + 'M'}
               />
-              <Tooltip content={<ChartTooltip formatter={v => v.toFixed(2) + 'M'} />} />
+              <Tooltip content={<ChartTooltip formatter={v => Number(v).toFixed(2) + 'M'} />} />
               <Area
                 dataKey="mau" stroke={c.accent} strokeWidth={2}
                 fill="url(#mauGrad)"
@@ -121,7 +94,7 @@ export default function ProductDashboard() {
             style={{
               cursor: 'pointer',
               borderLeft: selectedStep === step.label ? '2px solid var(--accent)' : '2px solid transparent',
-              paddingLeft: selectedStep === step.label ? 8 : 8,
+              paddingLeft: 8,
               background: selectedStep === step.label ? 'var(--accent-soft)' : 'transparent',
               borderRadius: selectedStep === step.label ? 6 : 0,
               transition: 'background 0.15s, border-color 0.15s',
@@ -130,7 +103,7 @@ export default function ProductDashboard() {
             <div className="funnel-label">{step.label}</div>
             <div className="funnel-bar" style={{ width: `${step.pct}%` }}>{step.pct}%</div>
             <div className="funnel-count">{step.count}</div>
-            <div className="funnel-drop" style={{ color: step.dropColor }}>{step.drop}</div>
+            <div className="funnel-drop" style={{ color: resolveDropColor(step.dropColorToken) }}>{step.drop}</div>
           </div>
         ))}
         <div className="funnel-note">
@@ -154,7 +127,7 @@ export default function ProductDashboard() {
               style={{
                 cursor: 'pointer',
                 borderLeft: selectedFeature === f.label ? '2px solid var(--accent)' : '2px solid transparent',
-                paddingLeft: selectedFeature === f.label ? 8 : 8,
+                paddingLeft: 8,
                 background: selectedFeature === f.label ? 'var(--accent-soft)' : 'transparent',
                 borderRadius: selectedFeature === f.label ? 6 : 0,
                 transition: 'background 0.15s, border-color 0.15s',
@@ -177,14 +150,14 @@ export default function ProductDashboard() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={authMixData}
+                  data={authMix}
                   cx="50%" cy="50%"
                   innerRadius="55%"
                   outerRadius="80%"
                   dataKey="value"
                   paddingAngle={2}
                 >
-                  {authMixData.map((_, i) => (
+                  {authMix.map((_, i) => (
                     <Cell key={i} fill={authColors[i % authColors.length]} stroke="none" />
                   ))}
                 </Pie>
