@@ -6,6 +6,27 @@ import {
 import { ChartTooltip } from '../components/charts/ChartTooltip'
 import { useChartColors } from '../hooks/useChartColors'
 
+type GoldenSignal = 'latency' | 'traffic' | 'errors' | 'saturation'
+
+const goldenSignals: { key: GoldenSignal; label: string; color: string; description: string }[] = [
+  { key: 'latency',    label: 'Latency',    color: 'var(--accent)',   description: 'How long requests take' },
+  { key: 'traffic',    label: 'Traffic',    color: 'var(--teal)',     description: 'Demand on the system' },
+  { key: 'errors',     label: 'Errors',     color: 'var(--danger)',   description: 'Rate of failed requests' },
+  { key: 'saturation', label: 'Saturation', color: 'var(--warning)',  description: 'How "full" the service is' },
+]
+
+// Which signals each panel belongs to (a panel can belong to multiple)
+const panelSignals: Record<string, GoldenSignal[]> = {
+  kpi_crash:      ['errors'],
+  kpi_api:        ['errors'],
+  kpi_push:       ['traffic'],
+  kpi_ttc:        ['latency'],
+  burn:           ['traffic', 'saturation'],
+  chart_latency:  ['latency'],
+  deps:           ['latency', 'saturation'],
+  alerts:         ['errors'],
+}
+
 const pushLatencyData = [
   { time: '-60m', p50: 1.1, p95: 2.4, p99: 3.8 },
   { time: '-55m', p50: 1.0, p95: 2.3, p99: 3.7 },
@@ -60,6 +81,7 @@ export default function SREDashboard() {
   const c = useChartColors()
   const [activeSeverity, setActiveSeverity] = React.useState<string | null>(null)
   const [selectedDep, setSelectedDep] = React.useState<string | null>(null)
+  const [activeSignal, setActiveSignal] = React.useState<GoldenSignal | null>(null)
 
   const tickStyle = { fontSize: 10, fontFamily: 'IBM Plex Mono, monospace', fill: c.text }
 
@@ -73,6 +95,20 @@ export default function SREDashboard() {
   const toggleDep = (name: string) =>
     setSelectedDep(prev => (prev === name ? null : name))
 
+  const toggleSignal = (sig: GoldenSignal) =>
+    setActiveSignal(prev => (prev === sig ? null : sig))
+
+  // Returns inline style that dims a panel when it doesn't belong to the active signal
+  const dim = (panelKey: string): React.CSSProperties => {
+    if (!activeSignal) return {}
+    const belongs = panelSignals[panelKey]?.includes(activeSignal) ?? false
+    return {
+      opacity: belongs ? 1 : 0.25,
+      filter: belongs ? 'none' : 'saturate(0.2)',
+      transition: 'opacity 0.2s, filter 0.2s',
+    }
+  }
+
   return (
     <section className="dashboard">
       <div className="dash-header">
@@ -80,24 +116,59 @@ export default function SREDashboard() {
         <div className="dash-subtitle">Real-time view for on-call · auto-refresh 30s</div>
       </div>
 
+      {/* Golden Signals Filter */}
+      <div className="filter-row" style={{ marginBottom: 16 }}>
+        {goldenSignals.map(sig => {
+          const isActive = activeSignal === sig.key
+          return (
+            <button
+              key={sig.key}
+              className={`filter-pill${isActive ? ' active' : ''}`}
+              onClick={() => toggleSignal(sig.key)}
+              title={sig.description}
+              style={isActive ? {
+                borderColor: sig.color,
+                color: sig.color,
+                background: 'var(--accent-soft)',
+                outline: `1px solid ${sig.color}`,
+              } : {}}
+            >
+              {isActive ? '● ' : ''}{sig.label}
+            </button>
+          )
+        })}
+        {activeSignal && (
+          <button
+            onClick={() => setActiveSignal(null)}
+            style={{
+              fontSize: 11, cursor: 'pointer', color: 'var(--text-secondary)',
+              background: 'none', border: 'none', padding: '0 6px',
+              fontFamily: 'IBM Plex Mono, monospace',
+            }}
+          >
+            ✕ clear
+          </button>
+        )}
+      </div>
+
       {/* KPIs */}
       <div className="grid grid-4">
-        <div className="kpi">
+        <div className="kpi" style={dim('kpi_crash')}>
           <div className="kpi-label">Crash-free sessions</div>
           <div className="kpi-value success">99.97%</div>
           <div className="kpi-delta delta-flat">SLO 99.95% · 28d</div>
         </div>
-        <div className="kpi">
+        <div className="kpi" style={dim('kpi_api')}>
           <div className="kpi-label">API availability</div>
           <div className="kpi-value success">99.94%</div>
           <div className="kpi-delta delta-flat">SLO 99.95% · 28d</div>
         </div>
-        <div className="kpi">
+        <div className="kpi" style={dim('kpi_push')}>
           <div className="kpi-label">Push delivery</div>
           <div className="kpi-value warning">99.62%</div>
           <div className="kpi-delta delta-warn">SLO 99.5% · 7d</div>
         </div>
-        <div className="kpi">
+        <div className="kpi" style={dim('kpi_ttc')}>
           <div className="kpi-label">Time-to-code p95</div>
           <div className="kpi-value success">1.28s</div>
           <div className="kpi-delta delta-flat">SLO &lt;1.5s · 7d</div>
@@ -105,7 +176,7 @@ export default function SREDashboard() {
       </div>
 
       {/* SLO Burn Rates */}
-      <div className="panel">
+      <div className="panel" style={dim('burn')}>
         <div className="panel-title">SLO burn rates (1h window)</div>
         <div className="burn-grid">
           {burnItems.map(b => (
@@ -122,7 +193,7 @@ export default function SREDashboard() {
 
       {/* Chart + Dependencies */}
       <div className="grid grid-asym-2 row-gap">
-        <div className="panel" style={{ marginTop: 0 }}>
+        <div className="panel" style={{ marginTop: 0, ...dim('chart_latency') }}>
           <div className="panel-title">Push E2E latency (p50 / p95 / p99)</div>
           <div className="chart-wrap">
             <ResponsiveContainer width="100%" height="100%">
@@ -151,7 +222,7 @@ export default function SREDashboard() {
           </div>
         </div>
 
-        <div className="panel" style={{ marginTop: 0 }}>
+        <div className="panel" style={{ marginTop: 0, ...dim('deps') }}>
           <div className="panel-title">Dependencies</div>
           {deps.map(d => (
             <div
@@ -180,7 +251,7 @@ export default function SREDashboard() {
       </div>
 
       {/* Active Alerts */}
-      <div className="panel">
+      <div className="panel" style={dim('alerts')}>
         <div className="panel-title">
           <span>Active alerts</span>
           <span style={{ color: 'var(--warning)', fontSize: 11 }}>2 firing</span>
