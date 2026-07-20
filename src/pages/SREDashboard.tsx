@@ -5,6 +5,7 @@ import {
 } from 'recharts'
 import { ChartTooltip } from '../components/charts/ChartTooltip'
 import { useChartColors } from '../hooks/useChartColors'
+import { useSREData, resolveColorToken } from '../hooks/useSREData'
 
 type GoldenSignal = 'latency' | 'traffic' | 'errors' | 'saturation'
 
@@ -15,7 +16,6 @@ const goldenSignals: { key: GoldenSignal; label: string; color: string; descript
   { key: 'saturation', label: 'Saturation', color: 'var(--warning)',  description: 'How "full" the service is' },
 ]
 
-// Which signals each panel belongs to (a panel can belong to multiple)
 const panelSignals: Record<string, GoldenSignal[]> = {
   kpi_crash:      ['errors'],
   kpi_api:        ['errors'],
@@ -27,63 +27,15 @@ const panelSignals: Record<string, GoldenSignal[]> = {
   alerts:         ['errors'],
 }
 
-const pushLatencyData = [
-  { time: '-60m', p50: 1.1, p95: 2.4, p99: 3.8 },
-  { time: '-55m', p50: 1.0, p95: 2.3, p99: 3.7 },
-  { time: '-50m', p50: 1.1, p95: 2.5, p99: 3.9 },
-  { time: '-45m', p50: 1.2, p95: 2.4, p99: 3.8 },
-  { time: '-40m', p50: 1.1, p95: 2.6, p99: 4.1 },
-  { time: '-35m', p50: 1.0, p95: 2.5, p99: 4.0 },
-  { time: '-30m', p50: 1.1, p95: 2.4, p99: 3.9 },
-  { time: '-25m', p50: 1.2, p95: 2.6, p99: 4.2 },
-  { time: '-20m', p50: 1.1, p95: 2.8, p99: 4.5 },
-  { time: '-15m', p50: 1.3, p95: 3.4, p99: 5.6 },
-  { time: '-10m', p50: 1.2, p95: 3.8, p99: 6.2 },
-  { time: '-5m',  p50: 1.3, p95: 4.0, p99: 6.5 },
-  { time: 'now',  p50: 1.2, p95: 4.1, p99: 6.8 },
-]
-
-const burnItems = [
-  { label: 'Crash-free',    width: '8%',  value: '0.4× normal', color: 'var(--success)' },
-  { label: 'API availability', width: '22%', value: '1.1× normal', color: 'var(--success)' },
-  { label: 'Push delivery', width: '68%', value: '6.8× burning', color: 'var(--warning)' },
-  { label: 'Time-to-code',  width: '14%', value: '0.7× normal', color: 'var(--success)' },
-  { label: 'Backup success', width: '18%', value: '0.9× normal', color: 'var(--success)' },
-]
-
-const deps = [
-  { name: 'APNs',        status: 'success', label: 'healthy',  value: '142ms' },
-  { name: 'FCM',         status: 'warning', label: 'degraded', value: '890ms' },
-  { name: 'Primary DB',  status: 'success', label: 'healthy',  value: '4ms' },
-  { name: 'Redis cache', status: 'success', label: '',         value: '94.2% hit' },
-  { name: 'Identity IdP',status: 'success', label: 'healthy',  value: '38ms' },
-]
-
-const alerts = [
-  {
-    badge: 'badge-danger', badgeLabel: 'page',
-    text: 'Push delivery SLO burn 6.8× — FCM Asia region',
-    age: '14m ago', action: 'runbook ↗',
-  },
-  {
-    badge: 'badge-warning', badgeLabel: 'warn',
-    text: 'FCM dispatch latency p99 elevated (890ms vs 200ms baseline)',
-    age: '22m ago', action: 'runbook ↗',
-  },
-  {
-    badge: 'badge-neutral', badgeLabel: 'info',
-    text: 'Release v4.12.1 rollout at 47% (3.2M users)',
-    age: '2h ago', action: 'details ↗',
-  },
-]
-
 export default function SREDashboard() {
   const c = useChartColors()
+  const { loading, kpis, latency, burn, deps, alerts } = useSREData()
   const [activeSeverity, setActiveSeverity] = React.useState<string | null>(null)
   const [selectedDep, setSelectedDep] = React.useState<string | null>(null)
   const [activeSignal, setActiveSignal] = React.useState<GoldenSignal | null>(null)
 
   const tickStyle = { fontSize: 10, fontFamily: 'IBM Plex Mono, monospace', fill: c.text }
+  const placeholder = loading ? '—' : null
 
   const visibleAlerts = activeSeverity
     ? alerts.filter(a => a.badge === activeSeverity)
@@ -113,7 +65,10 @@ export default function SREDashboard() {
     <section className="dashboard">
       <div className="dash-header">
         <div className="dash-title">Service health overview</div>
-        <div className="dash-subtitle">Real-time view for on-call · auto-refresh 30s</div>
+        <div className="dash-subtitle">
+          Real-time view for on-call · auto-refresh 30s
+          {loading && <span style={{ color: 'var(--text-tertiary)', fontSize: 10, marginLeft: 8 }}>syncing…</span>}
+        </div>
       </div>
 
       {/* Golden Signals Filter */}
@@ -155,22 +110,22 @@ export default function SREDashboard() {
       <div className="grid grid-4">
         <div className="kpi" style={dim('kpi_crash')}>
           <div className="kpi-label">Crash-free sessions</div>
-          <div className="kpi-value success">99.97%</div>
+          <div className="kpi-value success">{placeholder ?? kpis.crashFree}</div>
           <div className="kpi-delta delta-flat">SLO 99.95% · 28d</div>
         </div>
         <div className="kpi" style={dim('kpi_api')}>
           <div className="kpi-label">API availability</div>
-          <div className="kpi-value success">99.94%</div>
+          <div className="kpi-value success">{placeholder ?? kpis.apiAvail}</div>
           <div className="kpi-delta delta-flat">SLO 99.95% · 28d</div>
         </div>
         <div className="kpi" style={dim('kpi_push')}>
           <div className="kpi-label">Push delivery</div>
-          <div className="kpi-value warning">99.62%</div>
+          <div className="kpi-value warning">{placeholder ?? kpis.pushDelivery}</div>
           <div className="kpi-delta delta-warn">SLO 99.5% · 7d</div>
         </div>
         <div className="kpi" style={dim('kpi_ttc')}>
           <div className="kpi-label">Time-to-code p95</div>
-          <div className="kpi-value success">1.28s</div>
+          <div className="kpi-value success">{placeholder ?? kpis.timeToCode}</div>
           <div className="kpi-delta delta-flat">SLO &lt;1.5s · 7d</div>
         </div>
       </div>
@@ -179,13 +134,13 @@ export default function SREDashboard() {
       <div className="panel" style={dim('burn')}>
         <div className="panel-title">SLO burn rates (1h window)</div>
         <div className="burn-grid">
-          {burnItems.map(b => (
+          {burn.map(b => (
             <div key={b.label}>
               <div className="burn-label">{b.label}</div>
               <div className="burn-bar">
-                <div className="burn-fill" style={{ width: b.width, background: b.color }} />
+                <div className="burn-fill" style={{ width: b.width, background: resolveColorToken(b.colorToken) }} />
               </div>
-              <div className="burn-value" style={{ color: b.color }}>{b.value}</div>
+              <div className="burn-value" style={{ color: resolveColorToken(b.colorToken) }}>{b.value}</div>
             </div>
           ))}
         </div>
@@ -197,7 +152,7 @@ export default function SREDashboard() {
           <div className="panel-title">Push E2E latency (p50 / p95 / p99)</div>
           <div className="chart-wrap">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={pushLatencyData} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
+              <LineChart data={latency} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
                 <CartesianGrid stroke={c.grid} vertical={false} />
                 <XAxis dataKey="time" tick={tickStyle} axisLine={{ stroke: c.grid }} tickLine={false} />
                 <YAxis tick={tickStyle} axisLine={false} tickLine={false} tickFormatter={v => `${v}s`} />

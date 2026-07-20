@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useDarkMode } from './hooks/useDarkMode'
 import { ThemeContext } from './context/ThemeContext'
+import { useDatadogMetrics } from './hooks/useDatadogMetrics'
 import Sidebar from './components/layout/Sidebar'
 import Topbar from './components/layout/Topbar'
 import SREDashboard from './pages/SREDashboard'
@@ -34,6 +35,7 @@ const keyMap: Record<string, Section> = {
 export default function App() {
   const [section, setSection] = useState<Section>('sre')
   const { isDark, toggle } = useDarkMode()
+  useDatadogMetrics()
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
