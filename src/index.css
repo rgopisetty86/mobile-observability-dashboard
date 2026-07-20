@@ -263,6 +263,7 @@ body {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
+  cursor: pointer;
   padding: 16px 18px;
   transition: all 0.2s ease;
   position: relative; overflow: hidden;
@@ -480,8 +481,9 @@ body {
 }
 
 /* ─── Scorecard rows ──────────────────────────────────────────────────────── */
-.score-row         { display: flex; justify-content: space-between; padding: 9px 0; font-size: 12.5px; border-bottom: 1px solid var(--border-subtle); }
+.score-row         { display: flex; justify-content: space-between; padding: 9px 0; font-size: 12.5px; border-bottom: 1px solid var(--border-subtle); transition: background 0.15s; border-radius: 4px; }
 .score-row:last-child { border-bottom: none; }
+.score-row:hover   { background: var(--accent-soft); padding-left: 6px; padding-right: 6px; }
 .score-label       { color: var(--text-secondary); }
 .score-value       { font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
 

@@ -59,6 +59,7 @@ const alerts = [
 export default function SREDashboard() {
   const c = useChartColors()
   const [activeSeverity, setActiveSeverity] = React.useState<string | null>(null)
+  const [selectedDep, setSelectedDep] = React.useState<string | null>(null)
 
   const tickStyle = { fontSize: 10, fontFamily: 'IBM Plex Mono, monospace', fill: c.text }
 
@@ -68,6 +69,9 @@ export default function SREDashboard() {
 
   const toggleSeverity = (badge: string) =>
     setActiveSeverity(prev => (prev === badge ? null : badge))
+
+  const toggleDep = (name: string) =>
+    setSelectedDep(prev => (prev === name ? null : name))
 
   return (
     <section className="dashboard">
@@ -150,7 +154,20 @@ export default function SREDashboard() {
         <div className="panel" style={{ marginTop: 0 }}>
           <div className="panel-title">Dependencies</div>
           {deps.map(d => (
-            <div key={d.name} className="dep-row">
+            <div
+              key={d.name}
+              className="dep-row"
+              onClick={() => toggleDep(d.name)}
+              title={selectedDep === d.name ? 'Deselect' : `Inspect ${d.name}`}
+              style={{
+                cursor: 'pointer',
+                borderLeft: selectedDep === d.name ? '2px solid var(--accent)' : '2px solid transparent',
+                paddingLeft: selectedDep === d.name ? 10 : 10,
+                background: selectedDep === d.name ? 'var(--accent-soft)' : 'transparent',
+                borderRadius: selectedDep === d.name ? 6 : 0,
+                transition: 'background 0.15s, border-color 0.15s',
+              }}
+            >
               <span>{d.name}</span>
               <span>
                 <span className={`dot dot-${d.status}`} />

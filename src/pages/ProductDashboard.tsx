@@ -1,3 +1,4 @@
+import React, { useState } from 'react'
 import {
   AreaChart, Area,
   PieChart, Pie, Cell,
@@ -44,6 +45,8 @@ export default function ProductDashboard() {
   const c = useChartColors()
   const tickStyle = { fontSize: 10, fontFamily: 'IBM Plex Mono, monospace', fill: c.text }
   const authColors = [c.accent, c.success, c.purple]
+  const [selectedStep, setSelectedStep] = useState<string | null>(null)
+  const [selectedFeature, setSelectedFeature] = useState<string | null>(null)
 
   return (
     <section className="dashboard">
@@ -110,7 +113,20 @@ export default function ProductDashboard() {
       <div className="panel">
         <div className="panel-title">Enrollment funnel · last 7 days</div>
         {funnelSteps.map(step => (
-          <div key={step.label} className="funnel-row">
+          <div
+            key={step.label}
+            className="funnel-row"
+            onClick={() => setSelectedStep(prev => prev === step.label ? null : step.label)}
+            title={selectedStep === step.label ? 'Deselect step' : `Select: ${step.label}`}
+            style={{
+              cursor: 'pointer',
+              borderLeft: selectedStep === step.label ? '2px solid var(--accent)' : '2px solid transparent',
+              paddingLeft: selectedStep === step.label ? 8 : 8,
+              background: selectedStep === step.label ? 'var(--accent-soft)' : 'transparent',
+              borderRadius: selectedStep === step.label ? 6 : 0,
+              transition: 'background 0.15s, border-color 0.15s',
+            }}
+          >
             <div className="funnel-label">{step.label}</div>
             <div className="funnel-bar" style={{ width: `${step.pct}%` }}>{step.pct}%</div>
             <div className="funnel-count">{step.count}</div>
@@ -130,7 +146,20 @@ export default function ProductDashboard() {
         <div className="panel" style={{ marginTop: 0 }}>
           <div className="panel-title">Feature adoption (% of MAU)</div>
           {featureAdoption.map(f => (
-            <div key={f.label} className="adopt-row">
+            <div
+              key={f.label}
+              className="adopt-row"
+              onClick={() => setSelectedFeature(prev => prev === f.label ? null : f.label)}
+              title={selectedFeature === f.label ? 'Deselect feature' : `Select: ${f.label}`}
+              style={{
+                cursor: 'pointer',
+                borderLeft: selectedFeature === f.label ? '2px solid var(--accent)' : '2px solid transparent',
+                paddingLeft: selectedFeature === f.label ? 8 : 8,
+                background: selectedFeature === f.label ? 'var(--accent-soft)' : 'transparent',
+                borderRadius: selectedFeature === f.label ? 6 : 0,
+                transition: 'background 0.15s, border-color 0.15s',
+              }}
+            >
               <div className="adopt-head">
                 <span>{f.label}</span>
                 <span className="num">{f.pct}%</span>

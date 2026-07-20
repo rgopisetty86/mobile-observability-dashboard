@@ -62,7 +62,7 @@ export default function App() {
           {section === 'engineering' && <EngineeringDashboard key="engineering" />}
           {section === 'product'     && <ProductDashboard     key="product" />}
           {section === 'security'    && <SecurityDashboard    key="security" />}
-          {section === 'executive'   && <ExecutiveDashboard   key="executive" />}
+          {section === 'executive'   && <ExecutiveDashboard   key="executive" onNavigate={setSection} />}
         </main>
       </div>
     </ThemeContext.Provider>

@@ -1,3 +1,4 @@
+import React, { useRef, useState } from 'react'
 import {
   AreaChart, Area,
   XAxis, YAxis, CartesianGrid,
@@ -10,9 +11,18 @@ import { useSecurityData, resolveColor, severityBadge } from '../hooks/useSecuri
 export default function SecurityDashboard() {
   const c = useChartColors()
   const { loading, kpis, threats, integrity, events } = useSecurityData()
+  const [activeSeverity, setActiveSeverity] = useState<string | null>(null)
+  const eventsRef = useRef<HTMLDivElement>(null)
 
   const tickStyle = { fontSize: 10, fontFamily: 'IBM Plex Mono, monospace', fill: c.text }
   const placeholder = loading ? '—' : null
+
+  const toggleSeverity = (badge: string) =>
+    setActiveSeverity(prev => (prev === badge ? null : badge))
+
+  const visibleEvents = activeSeverity
+    ? events.filter(e => severityBadge(e.severity) === activeSeverity)
+    : events
 
   return (
     <section className="dashboard">
@@ -25,9 +35,14 @@ export default function SecurityDashboard() {
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <span className="badge badge-danger" style={{ fontSize: 11, padding: '4px 10px' }}>
+        <button
+          className="badge badge-danger"
+          style={{ fontSize: 11, padding: '4px 10px', cursor: 'pointer', border: 'none', fontFamily: 'inherit' }}
+          onClick={() => eventsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          title="Jump to security events table"
+        >
           ● {placeholder ?? kpis.activeInvestigations} active investigations
-        </span>
+        </button>
       </div>
 
       {/* KPIs */}
@@ -116,7 +131,7 @@ export default function SecurityDashboard() {
       </div>
 
       {/* Security Events Table */}
-      <div className="panel">
+      <div className="panel" ref={eventsRef}>
         <div className="panel-title">
           <span>High-severity security events</span>
           <a className="panel-action" href="#">open in SIEM ↗</a>
@@ -124,7 +139,22 @@ export default function SecurityDashboard() {
         <table className="tbl">
           <thead>
             <tr>
-              <th style={{ width: 90 }}>Severity</th>
+              <th style={{ width: 90 }}>
+                Severity
+                {activeSeverity && (
+                  <button
+                    onClick={() => setActiveSeverity(null)}
+                    style={{
+                      marginLeft: 6, fontSize: 10, cursor: 'pointer',
+                      color: 'var(--text-secondary)', background: 'none',
+                      border: 'none', padding: 0, fontFamily: 'IBM Plex Sans, sans-serif',
+                    }}
+                    title="Clear filter"
+                  >
+                    ✕ clear
+                  </button>
+                )}
+              </th>
               <th>Pattern</th>
               <th style={{ width: 120 }}>Geo</th>
               <th style={{ width: 80 }}>Affected</th>
@@ -132,9 +162,22 @@ export default function SecurityDashboard() {
             </tr>
           </thead>
           <tbody>
-            {events.map((e, i) => (
+            {visibleEvents.map((e, i) => (
               <tr key={i}>
-                <td><span className={`badge ${severityBadge(e.severity)}`}>{e.severity}</span></td>
+                <td>
+                  <button
+                    className={`badge ${severityBadge(e.severity)}`}
+                    onClick={() => toggleSeverity(severityBadge(e.severity))}
+                    title={activeSeverity === severityBadge(e.severity) ? 'Clear filter' : `Filter by ${e.severity}`}
+                    style={{
+                      cursor: 'pointer', border: 'none', fontFamily: 'inherit',
+                      outline: activeSeverity === severityBadge(e.severity) ? '2px solid currentColor' : 'none',
+                      outlineOffset: 2,
+                    }}
+                  >
+                    {e.severity}
+                  </button>
+                </td>
                 <td>{e.text}</td>
                 <td className="mono" style={{ color: 'var(--text-secondary)', fontSize: 11 }}>{e.geo}</td>
                 <td>{e.affected}</td>

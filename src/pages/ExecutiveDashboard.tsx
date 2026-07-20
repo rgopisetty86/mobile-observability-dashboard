@@ -1,3 +1,4 @@
+import React from 'react'
 import {
   BarChart, Bar,
   XAxis, YAxis, CartesianGrid,
@@ -5,6 +6,7 @@ import {
 } from 'recharts'
 import { ChartTooltip } from '../components/charts/ChartTooltip'
 import { useChartColors } from '../hooks/useChartColors'
+import type { Section } from '../App'
 
 const mauGrowthData = [
   { month: 'Jun', mau: 2.1 },
@@ -56,7 +58,7 @@ const unitEcon = [
   { label: 'Trend',              value: '↓ 8% MoM',  color: 'var(--success)' },
 ]
 
-export default function ExecutiveDashboard() {
+export default function ExecutiveDashboard({ onNavigate }: { onNavigate?: (section: Section) => void }) {
   const c = useChartColors()
   const tickStyle = { fontSize: 10, fontFamily: 'IBM Plex Mono, monospace', fill: c.text }
 
@@ -99,18 +101,50 @@ export default function ExecutiveDashboard() {
       {/* Reliability + Security scorecards */}
       <div className="grid grid-2 row-gap">
         <div className="panel" style={{ marginTop: 0 }}>
-          <div className="panel-title">Reliability scorecard</div>
+          <div className="panel-title">
+            Reliability scorecard
+            {onNavigate && (
+              <button
+                className="panel-action"
+                onClick={() => onNavigate('sre')}
+                style={{ cursor: 'pointer', border: 'none', background: 'none', fontFamily: 'inherit' }}
+              >
+                view SRE →
+              </button>
+            )}
+          </div>
           {reliability.map((r, i) => (
-            <div key={i} className="score-row">
+            <div
+              key={i}
+              className="score-row"
+              onClick={() => onNavigate?.('sre')}
+              style={{ cursor: onNavigate ? 'pointer' : 'default' }}
+            >
               <span className="score-label">{r.label}</span>
               <span className="score-value" style={r.color ? { color: r.color } : {}}>{r.value}</span>
             </div>
           ))}
         </div>
         <div className="panel" style={{ marginTop: 0 }}>
-          <div className="panel-title">Security posture</div>
+          <div className="panel-title">
+            Security posture
+            {onNavigate && (
+              <button
+                className="panel-action"
+                onClick={() => onNavigate('security')}
+                style={{ cursor: 'pointer', border: 'none', background: 'none', fontFamily: 'inherit' }}
+              >
+                view Security →
+              </button>
+            )}
+          </div>
           {security.map((s, i) => (
-            <div key={i} className="score-row">
+            <div
+              key={i}
+              className="score-row"
+              onClick={() => onNavigate?.('security')}
+              style={{ cursor: onNavigate ? 'pointer' : 'default' }}
+            >
               <span className="score-label">{s.label}</span>
               <span className="score-value" style={s.color ? { color: s.color } : {}}>{s.value}</span>
             </div>
