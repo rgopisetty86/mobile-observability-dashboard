@@ -1,0 +1,392 @@
+================================================================================
+  MOBILE OBSERVABILITY DASHBOARD — TEST FRAMEWORK REFERENCE
+================================================================================
+
+  Stack:   Vitest + @testing-library/react + jsdom
+  Tests:   122 passing  |  6 test files  |  ~1.4 s total runtime
+  Run:     npm test
+
+--------------------------------------------------------------------------------
+1. TOOL SELECTION
+--------------------------------------------------------------------------------
+
+Vitest is the test runner (not Jest) because:
+  - It reuses the existing vite.config.ts — no separate Babel/Jest config needed
+  - It understands import.meta.env (Vite's env variable syntax) natively
+  - Module bundling and transformation are shared with the dev build, making
+    it significantly faster than Jest on Vite projects
+
+@testing-library/react handles component rendering and DOM querying. Its
+philosophy is to query the DOM the way a user would — by visible text, by
+role, by label — rather than by internal React component structure.
+
+jsdom emulates a browser DOM inside Node.js so React components can render
+and be asserted against without launching a real browser.
+
+--------------------------------------------------------------------------------
+2. NPM SCRIPTS
+--------------------------------------------------------------------------------
+
+  npm test                 vitest run   — one-shot CI-style run; exits with
+                                          code 1 if any test fails
+  npm run test:watch       vitest       — interactive watch mode; re-runs
+                                          affected tests on every file save
+  npm run test:coverage    vitest run --coverage
+                                        — writes a text summary to the terminal
+                                          and a full HTML report under dist/
+
+--------------------------------------------------------------------------------
+3. VITEST CONFIGURATION  (vite.config.ts — "test" block)
+--------------------------------------------------------------------------------
+
+  environment:  jsdom
+    Every test file gets a fake browser environment with window, document,
+    localStorage, etc.
+
+  globals:  true
+    Makes describe / it / expect / vi available without explicit imports,
+    matching Jest's ergonomics.
+
+  setupFiles:  ['./src/test/setup.ts']
+    Runs setup.ts once before each test file to establish global mocks.
+
+  include:  src/**/*.{test,spec}.{ts,tsx}
+    Picks up all test files recursively under src/.
+
+  coverage.provider:  v8
+    Uses Node's built-in V8 engine — faster than Istanbul, no
+    instrumentation overhead.
+
+  coverage.include:  src/hooks/**, src/lib/**, src/pages/**, src/components/**
+  coverage.exclude:  src/test/**
+    Reports coverage only for production source, not the test files themselves.
+
+  NOTE: The top-level import changed from 'vite' to 'vitest/config'. This
+  is required so that TypeScript understands the "test" config block.
+
+--------------------------------------------------------------------------------
+4. GLOBAL MOCK LAYER  (src/test/setup.ts)
+--------------------------------------------------------------------------------
+
+This file runs before every test file and creates a fully controlled,
+hermetic environment. Five areas are mocked:
+
+  A. Firebase SDK  (src/lib/firebase)
+     ----------------------------------------
+     Replaced with a plain object: { db: {}, isConfigured: false }
+
+     Setting isConfigured: false is the key architectural lever. Every domain
+     hook (useSREData, useSecurityData, etc.) checks this flag and short-
+     circuits to its built-in mock fallback data immediately, without ever
+     calling Firestore. This makes all hook tests synchronous — no async,
+     no waitFor, no fake timers required.
+
+  B. Firestore API  (firebase/firestore)
+     ----------------------------------------
+     Each Firestore function (doc, collection, onSnapshot, query, orderBy,
+     setDoc, serverTimestamp) is replaced with vi.fn() stubs so no real
+     network I/O fires even if a hook escapes the isConfigured guard.
+
+     onSnapshot specifically returns a function (vi.fn()) to match
+     Firestore's unsubscribe pattern — hooks that call it would otherwise
+     throw on unmount.
+
+  C. Datadog  (src/lib/datadog)  — PARTIAL mock via importActual
+     ----------------------------------------
+     vi.mock('../lib/datadog', async (importActual) => {
+       const actual = await importActual()
+       return {
+         ...actual,                          // real helper functions kept
+         isDatadogConfigured: false,         // overridden
+         queryMetrics: vi.fn()               // overridden (makes HTTP calls)
+       }
+     })
+
+     importActual spreads the real module in first, then only overrides what
+     needs to be controlled. queryMetrics is stubbed because it would make
+     real HTTP requests. All other helpers — latestValue, firstSeriesPoints,
+     hoursAgo, daysAgo — run their actual implementations. This is why
+     utils.test.ts can unit-test them as pure functions.
+
+  D. ResizeObserver  (browser API not in jsdom)
+     ----------------------------------------
+     Recharts requires this API to measure chart container dimensions. jsdom
+     does not include it, so a no-op class is injected globally:
+
+       global.ResizeObserver = class ResizeObserver {
+         observe()    {}
+         unobserve()  {}
+         disconnect() {}
+       }
+
+     Without this, every component test that renders a chart would throw.
+
+  E. window.matchMedia  (browser API not in jsdom)
+     ----------------------------------------
+     useDarkMode calls window.matchMedia('(prefers-color-scheme: dark)') on
+     mount. jsdom does not implement this API, so it is stubbed to return
+     matches: false (light mode) with all required listener methods as no-ops.
+
+  F. scrollIntoView  (browser API not in jsdom)
+     ----------------------------------------
+     SecurityDashboard's "active investigations" badge calls
+     ref.current.scrollIntoView() when clicked. Stubbed on the HTMLElement
+     prototype so tests can also assert it was invoked:
+
+       window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
+--------------------------------------------------------------------------------
+5. TEST FILE STRUCTURE — THREE LAYERS
+--------------------------------------------------------------------------------
+
+LAYER 1 — Pure Functions  (src/test/utils.test.ts)  27 tests
+  Tests the smallest units: color-token resolver functions exported from each
+  domain hook, and the Datadog time-series utilities. No React involved.
+
+  Functions covered:
+    resolveColorToken   (useSREData)      maps 'success' -> 'var(--success)',
+                                          passes through unknown tokens unchanged
+    resolveDropColor    (useProductData)  funnel drop colour mapping
+    resolveScorecardColor (useExecutiveData) handles undefined gracefully
+    resolveColor        (useSecurityData) token -> CSS var
+    severityBadge       (useSecurityData) severity string -> badge CSS class
+                                          critical -> badge-danger
+                                          high     -> badge-warning
+                                          anything else -> badge-neutral
+    latestValue         (lib/datadog)     picks last point from a series array,
+                                          returns null for empty input
+    hoursAgo / daysAgo  (lib/datadog)     epoch arithmetic verified with ±5s
+                                          tolerance window
+    firstSeriesPoints   (lib/datadog)     maps Datadog pointlist to plain
+                                          { value, index } objects
+
+LAYER 2 — React Hooks  (src/test/hooks.test.ts)  42 tests
+  Tests the data layer in isolation from any UI. Uses renderHook() which
+  mounts a hook in a minimal React tree.
+
+  Because Firebase is mocked as unconfigured, every hook immediately returns
+  its fallback mock data — no async, no act() wrappers needed.
+
+  The tests assert interface contracts (shape and units), not specific values.
+  This means tests do not break if mock numbers are updated.
+
+  useSREData
+    - loading is false when unconfigured
+    - all 4 KPI fields present; values end with % or s
+    - latency array is non-empty with { time, p50, p95, p99 }
+    - burn items all have a colorToken in [success, warning, danger]
+    - exactly 5 dependency entries
+    - alerts have badge, badgeLabel, text fields
+
+  useProductData
+    - loading is false when unconfigured
+    - all 4 KPI fields present
+    - MAU trend has 7 data points
+    - enrollment funnel has 6 steps, first at 100%
+    - all funnel steps have dropColorToken
+    - 5 feature adoption items
+    - auth mix has 3 slices summing to exactly 100
+
+  useExecutiveData
+    - loading is false when unconfigured
+    - all 5 KPI fields; rating contains the ★ character
+    - MAU growth has 12 months
+    - reliability scorecard has 5 rows
+    - security scorecard has 5 rows
+    - platform mix contains both 'iOS' and 'Android'
+
+  useEngineeringData
+    - loading is false when unconfigured
+    - crashFree KPI ends with %
+    - exactly 4 crash signatures with name/platform/count/highlight fields
+    - version crash rates are numbers
+
+  useSecurityData
+    - loading is false when unconfigured
+    - all 5 KPI fields; activeInvestigations is a number
+    - threat events have time/fatigue/integrity/geo fields
+    - all security events have severity in [critical, high, medium]
+
+LAYER 3 — Components & Integration
+  Component tests render real React trees via render(). Each page component
+  uses a ThemeContext.Provider wrapper (all pages consume the theme context).
+  A helper function per file (renderSRE, renderSecurity, etc.) avoids
+  repeating this wrapper.
+
+  SREDashboard  (src/test/SREDashboard.test.tsx)  15 tests
+    Render
+      - Page title "Service health overview" present
+      - All 4 KPI card labels present
+      - All 5 dependency rows (APNs, FCM, Primary DB, Redis cache, Identity IdP)
+      - "Active alerts" panel present
+      - "SLO burn rates (1h window)" panel present
+
+    Golden Signal Filter
+      - All 4 pills (Latency, Traffic, Errors, Saturation) rendered
+      - Clicking a pill shows "✕ clear" button (was absent before)
+      - Clicking the active pill again removes the "✕ clear" button
+      - Clicking "✕ clear" removes the button and resets filter
+
+    Severity Badge Filter
+      - page / warn / info badge buttons are rendered
+      - Clicking "page" badge shows "clear" text
+      - Clicking "info" badge filters table: shows info alert, hides warn alert
+      - Clicking same badge twice restores all alerts
+
+    Dependency Row Highlight
+      - FCM row exists in the DOM
+      - Clicking a dep row does not throw
+
+  SecurityDashboard  (src/test/SecurityDashboard.test.tsx)  11 tests
+    Render
+      - Page title, 4 KPI labels (Integrity violations appears twice —
+        as KPI label and panel title — tested with getAllByText)
+      - Active investigations badge rendered as a button
+      - "High-severity security events" table present
+      - "open in SIEM ↗" action link present
+
+    Active Investigations Badge
+      - scrollIntoView is called when the badge is clicked
+
+    Severity Filter
+      - At least one severity badge is rendered
+      - Clicking a badge shows "clear" text in the header
+      - Clicking clear restores the full event count
+      - Clicking the same badge twice clears the filter
+
+  EngineeringDashboard  (src/test/OtherDashboards.test.tsx)  9 tests
+    - Page title "Crash explorer" present
+    - All 4 KPI cards (Crash-free sessions, ANR-free sessions,
+      Affected users (24h), New signatures)
+    - Filter pills "platform: all" and "version: all" rendered as buttons
+    - "Top crash signatures" panel present
+    - "open in Sentry ↗" action link present
+    - Clicking a filter pill does not throw
+
+  ProductDashboard  (src/test/OtherDashboards.test.tsx)  9 tests
+    - North star KPI section present
+    - All 4 KPI cards
+    - Enrollment funnel panel and steps visible
+    - Feature adoption panel present
+    - Clicking a funnel step does not throw
+    - Clicking the same funnel step twice deselects it
+    - Clicking a feature adoption row does not throw
+
+  ExecutiveDashboard  (src/test/OtherDashboards.test.tsx)  9 tests
+    - "Executive summary" title present
+    - All 5 KPI cards (MAU, New installs, D30 retention, NPS, App rating)
+    - Reliability scorecard and Security posture panels present
+    - "view SRE →" and "view Security →" NOT shown without onNavigate prop
+    - Both buttons appear when onNavigate is provided
+    - Clicking a reliability row calls onNavigate('sre')
+    - Clicking a security posture row calls onNavigate('security')
+    - Clicking "view SRE →" calls onNavigate('sre')
+    - Clicking "view Security →" calls onNavigate('security')
+
+  App Integration  (src/test/App.test.tsx)  19 tests
+    Initial render
+      - SRE dashboard is the default view
+      - All 5 sidebar nav buttons exist
+      - Demo banner visible
+
+    Sidebar navigation
+      - Click Engineering -> "Crash explorer" appears
+      - Click Product -> North star section appears
+      - Click Security -> "Threat detection" appears
+      - Click Executive -> "Executive summary" appears
+      - Navigate back to SRE -> "Service health overview" appears
+
+    Keyboard navigation (1–5)
+      - Key '2' -> Engineering  (Crash explorer visible)
+      - Key '3' -> Product  (North star visible)
+      - Key '4' -> Security  (Threat detection visible)
+      - Key '5' -> Executive  (Executive summary visible)
+      - Key '1' -> back to SRE
+      - Key '2' + metaKey -> no navigation (modifier guard)
+      - Key '9' -> no navigation (unknown key)
+
+    Theme toggle
+      - Toggle button is rendered
+      - Clicking it does not throw
+
+    Cross-page navigation via Executive
+      - Click reliability row -> App navigates to SRE dashboard
+      - Click security posture row -> App navigates to Security dashboard
+
+--------------------------------------------------------------------------------
+6. DOM QUERY STRATEGY
+--------------------------------------------------------------------------------
+
+A deliberate hierarchy of queries avoids brittle tests:
+
+  Unique text visible to user
+    getByText('exact string')
+    Fast, readable, fails if the text is absent or duplicated.
+
+  Text appearing in multiple nodes
+    getAllByText(/regex/).length > 0
+    Avoids the "Found multiple elements" error that getByText throws.
+
+  Interactive element
+    getByRole('button', { name: /label/i })
+    Matches the accessibility tree (computed accessible name), not DOM
+    structure. Resilient to CSS and markup changes.
+
+  Sidebar buttons (label + shortcut digit in accessible name)
+    getByRole('button', { name: /engineering/i })
+    Uses a partial/regex match because the button's computed accessible name
+    is "Engineering 2" (label + shortcut span concatenated by the browser).
+
+  Element that should be absent
+    queryByText(...).not.toBeInTheDocument()
+    getBy throws on absence; queryBy returns null, which toBeInTheDocument
+    can then assert against.
+
+--------------------------------------------------------------------------------
+7. FILE INVENTORY
+--------------------------------------------------------------------------------
+
+  src/test/
+    setup.ts                  Global mocks (Firebase, Datadog, ResizeObserver,
+                              matchMedia, scrollIntoView)
+    utils.test.ts             27 tests — color token helpers + Datadog utilities
+    hooks.test.ts             42 tests — all 5 domain hooks
+    SREDashboard.test.tsx     15 tests — KPIs, golden signal filter,
+                              severity filter, dep rows
+    SecurityDashboard.test.tsx 11 tests — severity filter, scroll-to-events badge
+    OtherDashboards.test.tsx  24 tests — Engineering, Product, Executive
+    App.test.tsx              19 tests — keyboard nav, sidebar nav,
+                              theme toggle, cross-page navigation
+
+  Total:  122 tests  |  6 test files  |  ~1.4 s
+
+--------------------------------------------------------------------------------
+8. KEY DESIGN DECISIONS
+--------------------------------------------------------------------------------
+
+  No snapshots
+    Snapshot tests couple assertions to rendered markup. Behaviour assertions
+    (text visible, button calls handler) survive UI refactors and are more
+    meaningful as regression guards.
+
+  importActual for Datadog
+    Only the side-effectful functions (network calls) are mocked. Pure
+    utility functions keep their real implementations so utils.test.ts
+    exercises the actual logic rather than a stub.
+
+  isConfigured: false drives the mock data path
+    The same code branch that runs in production when Firebase is unconfigured
+    runs in tests. This means the tests exercise the real fallback logic and
+    mock data definitions, catching regressions in both.
+
+  ThemeContext wrapper per component test
+    All page components consume useTheme(). Rather than mocking the hook,
+    a real ThemeContext.Provider with a no-op toggle is used. This keeps
+    the component tree valid and avoids mocking internal React hooks.
+
+  asserting shape, not values, in hook tests
+    Tests check that KPI strings end with '%' or 's', that arrays have the
+    right length, and that objects contain required keys — not that MAU is
+    exactly "2.4M". Specific values can change; structure should not.
+
+================================================================================
