@@ -31,7 +31,7 @@ vi.mock('firebase/firestore', () => ({
 }))
 
 // ── ResizeObserver mock (required by Recharts) ────────────────────────────
-global.ResizeObserver = class ResizeObserver {
+;(globalThis as unknown as Record<string, unknown>).ResizeObserver = class ResizeObserver {
   observe()    {}
   unobserve()  {}
   disconnect() {}
