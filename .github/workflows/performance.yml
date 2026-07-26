@@ -1,0 +1,134 @@
+name: Performance Tests (JMeter)
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  # Allow manual trigger with custom parameters
+  workflow_dispatch:
+    inputs:
+      threads:
+        description: Concurrent virtual users
+        required: false
+        default: '10'
+      rampup:
+        description: Ramp-up period in seconds
+        required: false
+        default: '15'
+      duration:
+        description: Test duration in seconds
+        required: false
+        default: '60'
+      threshold_ms:
+        description: Max acceptable response time (ms)
+        required: false
+        default: '3000'
+
+env:
+  JMETER_VERSION: 5.6.3
+  PREVIEW_PORT: 4173
+  # Use workflow_dispatch inputs when available, else defaults
+  THREADS:      ${{ github.event.inputs.threads      || '10' }}
+  RAMPUP:       ${{ github.event.inputs.rampup       || '15' }}
+  DURATION:     ${{ github.event.inputs.duration     || '60' }}
+  THRESHOLD_MS: ${{ github.event.inputs.threshold_ms || '3000' }}
+
+jobs:
+  performance:
+    name: JMeter Load Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app
+        run: npm run build
+        env:
+          VITE_FIREBASE_API_KEY: ''
+          VITE_FIREBASE_AUTH_DOMAIN: ''
+          VITE_FIREBASE_PROJECT_ID: ''
+          VITE_FIREBASE_APP_ID: ''
+          VITE_DATADOG_API_KEY: ''
+          VITE_DATADOG_APP_KEY: ''
+
+      - name: Start vite preview server
+        run: npx vite preview --port ${{ env.PREVIEW_PORT }} &
+        # Give the server a moment to be ready before JMeter fires
+      
+      - name: Wait for preview server to be ready
+        run: |
+          echo "Waiting for server on port ${{ env.PREVIEW_PORT }}..."
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:${{ env.PREVIEW_PORT }} > /dev/null 2>&1; then
+              echo "Server is up after ${i}s"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Set up Java (required by JMeter)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Download & install JMeter ${{ env.JMETER_VERSION }}
+        run: |
+          wget -q "https://dlcdn.apache.org/jmeter/binaries/apache-jmeter-${{ env.JMETER_VERSION }}.tgz" \
+            -O /tmp/jmeter.tgz
+          tar -xf /tmp/jmeter.tgz -C /opt
+          echo "/opt/apache-jmeter-${{ env.JMETER_VERSION }}/bin" >> "$GITHUB_PATH"
+
+      - name: Create output directories
+        run: mkdir -p jmeter/results jmeter/reports
+
+      - name: Run JMeter performance tests
+        run: |
+          jmeter -n \
+            -t jmeter/plans/app-performance.jmx \
+            -l jmeter/results/results.jtl \
+            -e -o jmeter/reports \
+            -JHOST=localhost \
+            -JPORT=${{ env.PREVIEW_PORT }} \
+            -JPROTOCOL=http \
+            -JTHREADS=${{ env.THREADS }} \
+            -JRAMPUP=${{ env.RAMPUP }} \
+            -JDURATION=${{ env.DURATION }} \
+            -JTHRESHOLD_MS=${{ env.THRESHOLD_MS }}
+
+      - name: Upload JMeter HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-report-${{ github.run_number }}
+          path: jmeter/reports/
+          retention-days: 30
+
+      - name: Upload JMeter raw results (JTL)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-results-${{ github.run_number }}
+          path: jmeter/results/results.jtl
+          retention-days: 30
+
+      - name: Check for failures in JTL results
+        run: |
+          ERRORS=$(grep -c "false" jmeter/results/results.jtl || true)
+          TOTAL=$(grep -c "^[0-9]" jmeter/results/results.jtl || true)
+          echo "Total samples: $TOTAL"
+          echo "Failures: $ERRORS"
+          if [ "$ERRORS" -gt "0" ]; then
+            echo "::warning::JMeter reported $ERRORS failed sample(s) out of $TOTAL total."
+          fi

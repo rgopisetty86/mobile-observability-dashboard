@@ -4,13 +4,14 @@
  * Firebase is mocked in setup.ts (isConfigured = false), so all hooks
  * return their typed mock fallback data immediately — no real network calls.
  */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { renderHook }           from '@testing-library/react'
 import { useSREData }           from '../hooks/useSREData'
 import { useProductData }       from '../hooks/useProductData'
 import { useExecutiveData }     from '../hooks/useExecutiveData'
 import { useEngineeringData }   from '../hooks/useEngineeringData'
 import { useSecurityData }      from '../hooks/useSecurityData'
+import { useDatadogMetrics, syncDatadogToFirestore } from '../hooks/useDatadogMetrics'
 
 // ── useSREData ────────────────────────────────────────────────────────────
 
@@ -222,5 +223,32 @@ describe('useSecurityData (Firebase unconfigured)', () => {
     result.current.events.forEach(e => {
       expect(['critical', 'high', 'medium']).toContain(e.severity)
     })
+  })
+})
+
+// ── useDatadogMetrics (both services unconfigured) ─────────────────────────
+// Covers the early-return branches in useDatadogMetrics and syncDatadogToFirestore.
+// In this context setup.ts mocks isConfigured=false and isDatadogConfigured=false.
+
+describe('useDatadogMetrics (both services unconfigured)', () => {
+  it('mounts without error and returns nothing', () => {
+    const { result } = renderHook(() => useDatadogMetrics())
+    expect(result.current).toBeUndefined()
+  })
+
+  it('does not schedule any setInterval (hook is a no-op)', () => {
+    const setIntervalSpy = vi.spyOn(globalThis, 'setInterval')
+    const { unmount } = renderHook(() => useDatadogMetrics())
+    expect(setIntervalSpy).not.toHaveBeenCalled()
+    unmount()
+    setIntervalSpy.mockRestore()
+  })
+})
+
+describe('syncDatadogToFirestore (both services unconfigured)', () => {
+  it('resolves immediately without calling queryMetrics', async () => {
+    const { queryMetrics } = await import('../lib/datadog')
+    await syncDatadogToFirestore()
+    expect(queryMetrics).not.toHaveBeenCalled()
   })
 })

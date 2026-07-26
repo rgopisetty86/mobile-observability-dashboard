@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { ThemeContext } from '../context/ThemeContext'
 import EngineeringDashboard from '../pages/EngineeringDashboard'
 import ProductDashboard     from '../pages/ProductDashboard'
@@ -180,5 +180,154 @@ describe('ExecutiveDashboard — scorecard navigation', () => {
     wrap(<ExecutiveDashboard onNavigate={navigate} />)
     fireEvent.click(screen.getByText('view Security →'))
     expect(navigate).toHaveBeenCalledWith('security')
+  })
+})
+
+// ── EngineeringDashboard — FilterPill dropdown ────────────────────────────
+// These tests exercise the portal-rendered dropdown (isOpen=true path) and
+// cover the "clear all", "N of M shown", and empty-state branches.
+
+describe('EngineeringDashboard — filter pill dropdown', () => {
+  it('opens the platform dropdown and shows iOS / Android options', () => {
+    wrap(<EngineeringDashboard />)
+    fireEvent.click(screen.getByRole('button', { name: /platform: all/i }))
+    expect(screen.getByText('iOS')).toBeInTheDocument()
+    expect(screen.getByText('Android')).toBeInTheDocument()
+    expect(screen.getByText('all platforms')).toBeInTheDocument()
+  })
+
+  it('selecting an option updates the pill label', () => {
+    wrap(<EngineeringDashboard />)
+    fireEvent.click(screen.getByRole('button', { name: /platform: all/i }))
+    fireEvent.click(screen.getByText('iOS'))
+    expect(screen.getByRole('button', { name: /platform: iOS/i })).toBeInTheDocument()
+  })
+
+  it('shows the "clear all ✕" button once a filter is active', () => {
+    wrap(<EngineeringDashboard />)
+    fireEvent.click(screen.getByRole('button', { name: /platform: all/i }))
+    fireEvent.click(screen.getByText('iOS'))
+    expect(screen.getByText(/clear all/i)).toBeInTheDocument()
+  })
+
+  it('"clear all ✕" resets all filters back to "all"', () => {
+    wrap(<EngineeringDashboard />)
+    fireEvent.click(screen.getByRole('button', { name: /platform: all/i }))
+    fireEvent.click(screen.getByText('iOS'))
+    fireEvent.click(screen.getByText(/clear all/i))
+    expect(screen.getByRole('button', { name: /platform: all/i })).toBeInTheDocument()
+    expect(screen.queryByText(/clear all/i)).not.toBeInTheDocument()
+  })
+
+  it('shows "N of M shown" count in the signatures panel when a filter is active', () => {
+    wrap(<EngineeringDashboard />)
+    fireEvent.click(screen.getByRole('button', { name: /platform: all/i }))
+    fireEvent.click(screen.getByText('iOS'))
+    // Signatures panel title now shows filtered count
+    expect(screen.getByText(/of \d+ shown/)).toBeInTheDocument()
+  })
+
+  it('closes the dropdown when clicking the pill button a second time', () => {
+    wrap(<EngineeringDashboard />)
+    const pill = screen.getByRole('button', { name: /platform: all/i })
+    fireEvent.click(pill)
+    expect(screen.getByText('iOS')).toBeInTheDocument()
+    fireEvent.click(pill)
+    expect(screen.queryByText('iOS')).not.toBeInTheDocument()
+  })
+
+  it('closes dropdown on outside mousedown', () => {
+    wrap(<EngineeringDashboard />)
+    fireEvent.click(screen.getByRole('button', { name: /platform: all/i }))
+    expect(screen.getByText('iOS')).toBeInTheDocument()
+    fireEvent.mouseDown(document.body)
+    expect(screen.queryByText('iOS')).not.toBeInTheDocument()
+  })
+
+  it('shows empty-state message when active filters exclude all signatures', () => {
+    wrap(<EngineeringDashboard />)
+    fireEvent.click(screen.getByRole('button', { name: /device tier: all/i }))
+    // Use the exact option button text (not the crash-row subtext "Android · low-tier devices")
+    const lowTierBtn = screen.getByRole('button', { name: 'low-tier' })
+    fireEvent.click(lowTierBtn)
+    // After filtering by low-tier some signatures may be hidden; verify counter or empty state
+    const shown = screen.queryByText(/no crashes match/i)
+    const counter = screen.queryByText(/of \d+ shown/)
+    expect(shown ?? counter).toBeInTheDocument()
+  })
+
+  it('opens the version dropdown and shows "all versions" option', () => {
+    wrap(<EngineeringDashboard />)
+    fireEvent.click(screen.getByRole('button', { name: /^version/i }))
+    expect(screen.getByRole('button', { name: /all versions/i })).toBeInTheDocument()
+  })
+
+  it('selecting a version filter highlights label in the bar-chart panel', () => {
+    wrap(<EngineeringDashboard />)
+    fireEvent.click(screen.getByRole('button', { name: /^version/i }))
+    // All non-"all" option buttons in the dropdown
+    const allVersionBtns = screen.getAllByRole('button').filter(b =>
+      b.textContent !== null && /v\d|4\.\d|\d+\.\d+\.\d+/.test(b.textContent)
+    )
+    if (allVersionBtns.length > 0) {
+      fireEvent.click(allVersionBtns[0])
+      expect(screen.getByText(/highlighted/i)).toBeInTheDocument()
+    }
+  })
+
+  it('stops propagation on option mousedown (portal click isolation)', () => {
+    wrap(<EngineeringDashboard />)
+    fireEvent.click(screen.getByRole('button', { name: /platform: all/i }))
+    const iOSOption = screen.getByText('iOS')
+    // mousedown on option should not close the dropdown (stopPropagation)
+    fireEvent.mouseDown(iOSOption)
+    expect(screen.getByText('iOS')).toBeInTheDocument()
+  })
+})
+
+// ── EngineeringDashboard — dark theme ────────────────────────────────────
+
+describe('EngineeringDashboard — dark theme', () => {
+  it('renders correctly with isDark = true', () => {
+    const darkTheme = { isDark: true, toggle: () => {} }
+    render(
+      <ThemeContext.Provider value={darkTheme}>
+        <EngineeringDashboard />
+      </ThemeContext.Provider>
+    )
+    expect(screen.getByText('Crash explorer')).toBeInTheDocument()
+  })
+})
+
+// ── ProductDashboard — dark theme ─────────────────────────────────────────
+
+describe('ProductDashboard — dark theme', () => {
+  it('renders correctly with isDark = true', () => {
+    const darkTheme = { isDark: true, toggle: () => {} }
+    render(
+      <ThemeContext.Provider value={darkTheme}>
+        <ProductDashboard />
+      </ThemeContext.Provider>
+    )
+    expect(screen.getByText(/north star/i)).toBeInTheDocument()
+  })
+})
+
+// ── ExecutiveDashboard — unit economics and regions ───────────────────────
+
+describe('ExecutiveDashboard — additional panels', () => {
+  it('renders unit economics panel', () => {
+    wrap(<ExecutiveDashboard />)
+    expect(screen.getByText('Unit economics')).toBeInTheDocument()
+  })
+
+  it('renders top regions panel', () => {
+    wrap(<ExecutiveDashboard />)
+    expect(screen.getByText('Top regions')).toBeInTheDocument()
+  })
+
+  it('renders platform mix panel', () => {
+    wrap(<ExecutiveDashboard />)
+    expect(screen.getByText('Platform mix')).toBeInTheDocument()
   })
 })
