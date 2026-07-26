@@ -10,7 +10,11 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "sonar": "sonar-scanner",
+    "perf": "npm run build && npm run perf:run",
+    "perf:run": "jmeter -n -t jmeter/plans/app-performance.jmx -l jmeter/results/results.jtl -e -o jmeter/reports -JHOST=localhost -JPORT=4173",
+    "perf:serve": "vite preview --port 4173"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.2",
@@ -36,6 +40,7 @@
     "eslint-plugin-react-refresh": "^0.5.3",
     "globals": "^17.7.0",
     "jsdom": "^29.1.1",
+    "sonarqube-scanner": "^5.0.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.62.0",
     "vite": "^8.1.1",
