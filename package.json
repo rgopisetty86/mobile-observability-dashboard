@@ -14,7 +14,8 @@
     "sonar": "sonar-scanner",
     "perf": "npm run build && npm run perf:run",
     "perf:run": "jmeter -n -t jmeter/plans/app-performance.jmx -l jmeter/results/results.jtl -e -o jmeter/reports -JHOST=localhost -JPORT=4173",
-    "perf:serve": "vite preview --port 4173"
+    "perf:serve": "vite preview --port 4173",
+    "dev:auto": "bash scripts/auto-restart-dev.sh"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.2",
