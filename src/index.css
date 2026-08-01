@@ -72,6 +72,114 @@
   --grad-surface: linear-gradient(135deg, #ffffff, #f8faff);
 }
 
+/* ─── Midnight theme (deep indigo / violet) ───────────────────────────────── */
+:root[data-theme="midnight"] {
+  --bg-app:        #07050f;
+  --bg-sidebar:    #0b0818;
+  --bg-surface:    rgba(167,139,250,0.045);
+  --bg-surface-2:  rgba(167,139,250,0.07);
+  --bg-elevated:   rgba(167,139,250,0.10);
+  --border-subtle:  rgba(167,139,250,0.08);
+  --border-default: rgba(167,139,250,0.14);
+  --border-strong:  rgba(167,139,250,0.24);
+  --text-primary:   #ede9ff;
+  --text-secondary: #8b7fc0;
+  --text-tertiary:  #4a3f6e;
+  --accent:       #a78bfa;
+  --accent-soft:  rgba(167,139,250,0.14);
+  --accent-glow:  rgba(167,139,250,0.28);
+  --success:      #34d399;
+  --success-soft: rgba(52,211,153,0.12);
+  --success-glow: rgba(52,211,153,0.22);
+  --warning:      #fbbf24;
+  --warning-soft: rgba(251,191,36,0.12);
+  --warning-glow: rgba(251,191,36,0.22);
+  --danger:       #f87171;
+  --danger-soft:  rgba(248,113,113,0.12);
+  --danger-glow:  rgba(248,113,113,0.22);
+  --purple:       #e879f9;
+  --teal:         #2dd4bf;
+  --chart-grid:   rgba(167,139,250,0.06);
+  --chart-text:   #4a3f6e;
+
+  --grad-accent:  linear-gradient(135deg, #a78bfa, #e879f9);
+  --grad-success: linear-gradient(135deg, #34d399, #059669);
+  --grad-danger:  linear-gradient(135deg, #f87171, #e11d48);
+  --grad-surface: linear-gradient(135deg, rgba(167,139,250,0.08), rgba(167,139,250,0.02));
+}
+
+/* ─── Forest theme (dark teal / emerald) ─────────────────────────────────── */
+:root[data-theme="forest"] {
+  --bg-app:        #040e08;
+  --bg-sidebar:    #051109;
+  --bg-surface:    rgba(74,222,128,0.04);
+  --bg-surface-2:  rgba(74,222,128,0.065);
+  --bg-elevated:   rgba(74,222,128,0.09);
+  --border-subtle:  rgba(74,222,128,0.07);
+  --border-default: rgba(74,222,128,0.12);
+  --border-strong:  rgba(74,222,128,0.22);
+  --text-primary:   #e8fdf0;
+  --text-secondary: #6aaa88;
+  --text-tertiary:  #2e5c42;
+  --accent:       #4ade80;
+  --accent-soft:  rgba(74,222,128,0.13);
+  --accent-glow:  rgba(74,222,128,0.26);
+  --success:      #34d399;
+  --success-soft: rgba(52,211,153,0.13);
+  --success-glow: rgba(52,211,153,0.24);
+  --warning:      #fbbf24;
+  --warning-soft: rgba(251,191,36,0.12);
+  --warning-glow: rgba(251,191,36,0.22);
+  --danger:       #f87171;
+  --danger-soft:  rgba(248,113,113,0.12);
+  --danger-glow:  rgba(248,113,113,0.22);
+  --purple:       #a78bfa;
+  --teal:         #2dd4bf;
+  --chart-grid:   rgba(74,222,128,0.05);
+  --chart-text:   #2e5c42;
+
+  --grad-accent:  linear-gradient(135deg, #4ade80, #2dd4bf);
+  --grad-success: linear-gradient(135deg, #34d399, #059669);
+  --grad-danger:  linear-gradient(135deg, #f87171, #e11d48);
+  --grad-surface: linear-gradient(135deg, rgba(74,222,128,0.07), rgba(74,222,128,0.02));
+}
+
+/* ─── Dusk theme (warm rose / amber) ─────────────────────────────────────── */
+:root[data-theme="dusk"] {
+  --bg-app:        #100608;
+  --bg-sidebar:    #140709;
+  --bg-surface:    rgba(251,113,133,0.04);
+  --bg-surface-2:  rgba(251,113,133,0.065);
+  --bg-elevated:   rgba(251,113,133,0.09);
+  --border-subtle:  rgba(251,113,133,0.07);
+  --border-default: rgba(251,113,133,0.13);
+  --border-strong:  rgba(251,113,133,0.22);
+  --text-primary:   #fff0f2;
+  --text-secondary: #b07080;
+  --text-tertiary:  #5e3040;
+  --accent:       #fb7185;
+  --accent-soft:  rgba(251,113,133,0.13);
+  --accent-glow:  rgba(251,113,133,0.28);
+  --success:      #34d399;
+  --success-soft: rgba(52,211,153,0.12);
+  --success-glow: rgba(52,211,153,0.22);
+  --warning:      #fbbf24;
+  --warning-soft: rgba(251,191,36,0.12);
+  --warning-glow: rgba(251,191,36,0.22);
+  --danger:       #f87171;
+  --danger-soft:  rgba(248,113,113,0.12);
+  --danger-glow:  rgba(248,113,113,0.22);
+  --purple:       #c084fc;
+  --teal:         #2dd4bf;
+  --chart-grid:   rgba(251,113,133,0.05);
+  --chart-text:   #5e3040;
+
+  --grad-accent:  linear-gradient(135deg, #fb7185, #f97316);
+  --grad-success: linear-gradient(135deg, #34d399, #059669);
+  --grad-danger:  linear-gradient(135deg, #f87171, #e11d48);
+  --grad-surface: linear-gradient(135deg, rgba(251,113,133,0.07), rgba(251,113,133,0.02));
+}
+
 /* ─── Base ────────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
@@ -100,6 +208,15 @@ body {
 }
 [data-theme="dark"] .sidebar {
   background: linear-gradient(180deg, #090d1a 0%, #07090f 100%);
+}
+[data-theme="midnight"] .sidebar {
+  background: linear-gradient(180deg, #0e0b1f 0%, #07050f 100%);
+}
+[data-theme="forest"] .sidebar {
+  background: linear-gradient(180deg, #071410 0%, #040e08 100%);
+}
+[data-theme="dusk"] .sidebar {
+  background: linear-gradient(180deg, #1a090c 0%, #100608 100%);
 }
 
 .brand {
@@ -151,6 +268,12 @@ body {
   background: linear-gradient(135deg, rgba(79,158,255,0.14), rgba(167,139,250,0.06));
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
 }
+[data-theme="midnight"] .nav-item.active,
+[data-theme="forest"] .nav-item.active,
+[data-theme="dusk"] .nav-item.active {
+  background: var(--accent-soft);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
 .nav-icon { width: 15px; height: 15px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 .nav-shortcut {
   margin-left: auto; font-size: 10px; font-family: 'IBM Plex Mono', monospace;
@@ -194,6 +317,21 @@ body {
   background: rgba(240,244,255,0.85);
   backdrop-filter: blur(20px) saturate(150%);
   -webkit-backdrop-filter: blur(20px) saturate(150%);
+}
+[data-theme="midnight"] .topbar {
+  background: rgba(7,5,15,0.80);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+[data-theme="forest"] .topbar {
+  background: rgba(4,14,8,0.80);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+[data-theme="dusk"] .topbar {
+  background: rgba(16,6,8,0.80);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
 }
 .topbar-left  { display: flex; align-items: center; gap: 12px; }
 .topbar-right { display: flex; align-items: center; gap: 10px; }
@@ -268,6 +406,9 @@ body {
   transition: all 0.2s ease;
   position: relative; overflow: hidden;
 }
+[data-theme="midnight"] .kpi,
+[data-theme="forest"] .kpi,
+[data-theme="dusk"] .kpi,
 [data-theme="dark"] .kpi {
   background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
   backdrop-filter: blur(12px);
@@ -334,6 +475,12 @@ body {
 }
 [data-theme="dark"] .panel {
   background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015));
+  backdrop-filter: blur(12px);
+}
+[data-theme="midnight"] .panel,
+[data-theme="forest"] .panel,
+[data-theme="dusk"] .panel {
+  background: var(--grad-surface);
   backdrop-filter: blur(12px);
 }
 [data-theme="light"] .panel {
@@ -493,11 +640,32 @@ body {
   stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0;
 }
 
-/* ─── Background radial glow (dark mode only) ─────────────────────────────── */
+/* ─── Background radial glow (dark themes) ────────────────────────────────── */
 [data-theme="dark"] body::before {
   content: '';
   position: fixed; pointer-events: none; z-index: 0;
   top: -30%; left: 50%; transform: translateX(-50%);
   width: 900px; height: 600px;
   background: radial-gradient(ellipse at center, rgba(79,158,255,0.04) 0%, transparent 70%);
+}
+[data-theme="midnight"] body::before {
+  content: '';
+  position: fixed; pointer-events: none; z-index: 0;
+  top: -30%; left: 50%; transform: translateX(-50%);
+  width: 900px; height: 600px;
+  background: radial-gradient(ellipse at center, rgba(167,139,250,0.05) 0%, transparent 70%);
+}
+[data-theme="forest"] body::before {
+  content: '';
+  position: fixed; pointer-events: none; z-index: 0;
+  top: -30%; left: 50%; transform: translateX(-50%);
+  width: 900px; height: 600px;
+  background: radial-gradient(ellipse at center, rgba(74,222,128,0.04) 0%, transparent 70%);
+}
+[data-theme="dusk"] body::before {
+  content: '';
+  position: fixed; pointer-events: none; z-index: 0;
+  top: -30%; left: 50%; transform: translateX(-50%);
+  width: 900px; height: 600px;
+  background: radial-gradient(ellipse at center, rgba(251,113,133,0.05) 0%, transparent 70%);
 }

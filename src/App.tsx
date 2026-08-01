@@ -34,7 +34,7 @@ const keyMap: Record<string, Section> = {
 
 export default function App() {
   const [section, setSection] = useState<Section>('sre')
-  const { isDark, toggle } = useDarkMode()
+  const { theme, isDark, setTheme, toggle } = useDarkMode()
   useDatadogMetrics()
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export default function App() {
   }, [])
 
   return (
-    <ThemeContext.Provider value={{ isDark, toggle }}>
+    <ThemeContext.Provider value={{ theme, isDark, setTheme, toggle }}>
       <div className="app">
         <Sidebar active={section} onSelect={setSection} />
         <main className="main">
