@@ -111,17 +111,34 @@ describe('App — keyboard navigation', () => {
 
 // ── Theme toggle ──────────────────────────────────────────────────────────
 
-describe('App — theme toggle', () => {
-  it('renders the theme toggle button', () => {
+describe('App — theme picker', () => {
+  it('renders all 5 theme swatch buttons', () => {
     render(<App />)
-    const themeBtn = screen.getByRole('button', { name: /light|dark|theme/i })
-    expect(themeBtn).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Dark' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Light' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Midnight' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Forest' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Dusk' })).toBeInTheDocument()
   })
 
-  it('clicking the theme toggle does not throw', () => {
+  it('clicking each theme swatch does not throw', () => {
     render(<App />)
-    const themeBtn = screen.getByRole('button', { name: /light|dark|theme/i })
-    expect(() => fireEvent.click(themeBtn)).not.toThrow()
+    const swatches = ['Dark', 'Light', 'Midnight', 'Forest', 'Dusk']
+    for (const name of swatches) {
+      expect(() =>
+        fireEvent.click(screen.getByRole('button', { name }))
+      ).not.toThrow()
+    }
+  })
+
+  it('clicking a theme swatch sets data-theme on the document root', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Midnight' }))
+    expect(document.documentElement.getAttribute('data-theme')).toBe('midnight')
+    fireEvent.click(screen.getByRole('button', { name: 'Light' }))
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light')
+    fireEvent.click(screen.getByRole('button', { name: 'Dark' }))
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
   })
 })
 
