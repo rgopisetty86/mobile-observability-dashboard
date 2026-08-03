@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
+import './lib/i18n'
 import { useDarkMode } from './hooks/useDarkMode'
 import { ThemeContext } from './context/ThemeContext'
 import { useDatadogMetrics } from './hooks/useDatadogMetrics'
@@ -12,20 +14,20 @@ import ExecutiveDashboard from './pages/ExecutiveDashboard'
 
 export type Section = 'sre' | 'engineering' | 'product' | 'security' | 'executive'
 
-const titles: Record<Section, string> = {
-  sre:         'SRE',
-  engineering: 'Engineering',
-  product:     'Product',
-  security:    'Security',
-  executive:   'Executive',
+const titleKeys: Record<Section, string> = {
+  sre:         'nav.sre',
+  engineering: 'nav.engineering',
+  product:     'nav.product',
+  security:    'nav.security',
+  executive:   'nav.executive',
 }
 
-const ranges: Record<Section, string> = {
-  sre:         'last 1h',
-  engineering: 'last 24h',
-  product:     'last 30d vs prior',
-  security:    'last 24h',
-  executive:   'May vs April',
+const rangeKeys: Record<Section, string> = {
+  sre:         'topbar.range.sre',
+  engineering: 'topbar.range.engineering',
+  product:     'topbar.range.product',
+  security:    'topbar.range.security',
+  executive:   'topbar.range.executive',
 }
 
 const keyMap: Record<string, Section> = {
@@ -35,6 +37,7 @@ const keyMap: Record<string, Section> = {
 export default function App() {
   const [section, setSection] = useState<Section>('sre')
   const { theme, isDark, setTheme, toggle } = useDarkMode()
+  const { t } = useTranslation()
   useDatadogMetrics()
 
   useEffect(() => {
@@ -52,13 +55,12 @@ export default function App() {
       <div className="app">
         <Sidebar active={section} onSelect={setSection} />
         <main className="main">
-          <Topbar title={titles[section]} range={ranges[section]} />
+          <Topbar title={t(titleKeys[section])} range={t(rangeKeys[section])} />
           <div className="demo-banner">
             <svg className="ico" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
             </svg>
-            Sample data — numbers are illustrative. Replace queries and panel sources with your own
-            Prometheus / Datadog / Amplitude instance to drive these live.
+            {t('demo.message')}
           </div>
           {section === 'sre'         && <SREDashboard         key="sre" />}
           {section === 'engineering' && <EngineeringDashboard key="engineering" />}

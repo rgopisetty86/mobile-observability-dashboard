@@ -1,5 +1,7 @@
+import { useTranslation } from 'react-i18next'
 import type { Section } from '../../App'
 import { useTheme, THEMES } from '../../context/ThemeContext'
+import { LANGUAGES, setLanguage, type LangCode } from '../../lib/i18n'
 
 interface SidebarProps {
   active: Section
@@ -53,6 +55,8 @@ const navItems: { id: Section; label: string; shortcut: string; icon: React.Reac
 
 export default function Sidebar({ active, onSelect }: SidebarProps) {
   const { theme, setTheme } = useTheme()
+  const { t, i18n } = useTranslation()
+  const currentLang = i18n.language as LangCode
 
   return (
     <aside className="sidebar">
@@ -65,7 +69,7 @@ export default function Sidebar({ active, onSelect }: SidebarProps) {
       </div>
 
       <div className="nav-section">
-        <div className="nav-label">Dashboards</div>
+        <div className="nav-label">{t('nav.dashboards')}</div>
         {navItems.map(item => (
           <button
             key={item.id}
@@ -73,7 +77,7 @@ export default function Sidebar({ active, onSelect }: SidebarProps) {
             onClick={() => onSelect(item.id)}
           >
             {item.icon}
-            <span>{item.label}</span>
+            <span>{t(`nav.${item.id}`)}</span>
             <span className="nav-shortcut">{item.shortcut}</span>
           </button>
         ))}
@@ -90,7 +94,7 @@ export default function Sidebar({ active, onSelect }: SidebarProps) {
             fontWeight: 600,
             marginBottom: 8,
           }}>
-            Theme
+            {t('sidebar.theme')}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
             {THEMES.map(t => (
@@ -154,9 +158,59 @@ export default function Sidebar({ active, onSelect }: SidebarProps) {
           </div>
         </div>
 
+        {/* Language picker */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={{
+            fontSize: 9.5,
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            color: 'var(--text-tertiary)',
+            fontWeight: 600,
+            marginBottom: 8,
+          }}>
+            {t('sidebar.language')}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4 }}>
+            {LANGUAGES.map(lang => (
+              <button
+                key={lang.code}
+                title={lang.label}
+                onClick={() => setLanguage(lang.code)}
+                style={{
+                  width: '100%',
+                  padding: '5px 2px',
+                  borderRadius: 7,
+                  border: currentLang === lang.code
+                    ? '2px solid var(--accent)'
+                    : '2px solid var(--border-subtle)',
+                  background: currentLang === lang.code
+                    ? 'var(--accent-soft)'
+                    : 'var(--bg-surface-2)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 2,
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <span style={{ fontSize: 14, lineHeight: 1 }}>{lang.flag}</span>
+                <span style={{
+                  fontSize: 8,
+                  color: currentLang === lang.code ? 'var(--accent)' : 'var(--text-tertiary)',
+                  fontWeight: currentLang === lang.code ? 600 : 400,
+                  letterSpacing: '0.03em',
+                }}>
+                  {lang.code.toUpperCase()}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
-          <span>v1.0 · sample data</span>
-          <span style={{ color: 'var(--text-tertiary)', fontSize: 10 }}>keys 1–5</span>
+          <span>{t('sidebar.version')}</span>
+          <span style={{ color: 'var(--text-tertiary)', fontSize: 10 }}>{t('sidebar.keys')}</span>
         </div>
       </div>
     </aside>
