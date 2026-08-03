@@ -208,6 +208,7 @@ export default function Sidebar({ active, onSelect }: SidebarProps) {
           </div>
         </div>
 
+
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
           <span>{t('sidebar.version')}</span>
           <span style={{ color: 'var(--text-tertiary)', fontSize: 10 }}>{t('sidebar.keys')}</span>
