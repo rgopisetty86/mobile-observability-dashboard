@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { useTranslation } from 'react-i18next'
 
 import {
   BarChart, Bar, Cell,
@@ -119,24 +120,7 @@ function FilterPill({
 
 // ── Static filter option definitions ──────────────────────────────────────
 
-const PLATFORM_OPTS: DropdownOption[] = [
-  { label: 'all platforms', value: 'all' },
-  { label: 'iOS',           value: 'iOS' },
-  { label: 'Android',       value: 'Android' },
-]
-
-const OS_OPTS: DropdownOption[] = [
-  { label: 'all OS versions', value: 'all' },
-  { label: 'iOS 17',          value: 'iOS 17' },
-  { label: 'Android 12',      value: 'Android 12' },
-  { label: 'Android 14',      value: 'Android 14' },
-]
-
-const DEVICE_TIER_OPTS: DropdownOption[] = [
-  { label: 'all device tiers', value: 'all' },
-  { label: 'high-tier',        value: 'high' },
-  { label: 'low-tier',         value: 'low' },
-]
+// Options are now built inside the component so labels can be translated
 
 // ── Stack trace ────────────────────────────────────────────────────────────
 
@@ -151,6 +135,7 @@ const stackTrace = `Thread 0 Crashed:
 // ── Component ──────────────────────────────────────────────────────────────
 
 export default function EngineeringDashboard() {
+  const { t } = useTranslation()
   const c = useChartColors()
   const { loading, kpis, signatures, versions, trend } = useEngineeringData()
 
@@ -161,9 +146,28 @@ export default function EngineeringDashboard() {
   const setFilter = (key: keyof FilterState) => (value: string) =>
     setFilters(f => ({ ...f, [key]: value }))
 
+  const PLATFORM_OPTS: DropdownOption[] = [
+    { label: t('eng.filter.allPlatforms'), value: 'all' },
+    { label: 'iOS',     value: 'iOS' },
+    { label: 'Android', value: 'Android' },
+  ]
+
+  const OS_OPTS: DropdownOption[] = [
+    { label: t('eng.filter.allOs'),  value: 'all' },
+    { label: 'iOS 17',       value: 'iOS 17' },
+    { label: 'Android 12',   value: 'Android 12' },
+    { label: 'Android 14',   value: 'Android 14' },
+  ]
+
+  const DEVICE_TIER_OPTS: DropdownOption[] = [
+    { label: t('eng.filter.allTiers'), value: 'all' },
+    { label: t('eng.filter.highTier'), value: 'high' },
+    { label: t('eng.filter.lowTier'),  value: 'low' },
+  ]
+
   // Version options derived from live data
   const versionOpts: DropdownOption[] = [
-    { label: 'all versions', value: 'all' },
+    { label: t('eng.filter.allVersions'), value: 'all' },
     ...versions.map(v => ({ label: v.version, value: v.version })),
   ]
 
@@ -191,19 +195,19 @@ export default function EngineeringDashboard() {
   return (
     <section className="dashboard">
       <div className="dash-header">
-        <div className="dash-title">Crash explorer</div>
+        <div className="dash-title">{t('eng.title')}</div>
         <div className="dash-subtitle">
-          Release regression triage · last 24h
-          {loading && <span style={{ color: 'var(--text-tertiary)', fontSize: 10, marginLeft: 8 }}>syncing…</span>}
+          {t('eng.subtitle')}
+          {loading && <span style={{ color: 'var(--text-tertiary)', fontSize: 10, marginLeft: 8 }}>{t('common.syncing')}</span>}
         </div>
       </div>
 
       {/* Filters */}
       <div className="filter-row" style={{ marginBottom: 16, alignItems: 'center' }}>
-        <FilterPill label="platform"    value={filters.platform}    options={PLATFORM_OPTS}     onChange={setFilter('platform')} />
-        <FilterPill label="version"     value={filters.version}     options={versionOpts}        onChange={setFilter('version')} />
-        <FilterPill label="os"          value={filters.os}          options={OS_OPTS}            onChange={setFilter('os')} />
-        <FilterPill label="device tier" value={filters.deviceTier}  options={DEVICE_TIER_OPTS}  onChange={setFilter('deviceTier')} />
+        <FilterPill label={t('eng.filter.platform')}   value={filters.platform}   options={PLATFORM_OPTS}    onChange={setFilter('platform')} />
+        <FilterPill label={t('eng.filter.version')}    value={filters.version}    options={versionOpts}       onChange={setFilter('version')} />
+        <FilterPill label={t('eng.filter.os')}         value={filters.os}         options={OS_OPTS}           onChange={setFilter('os')} />
+        <FilterPill label={t('eng.filter.deviceTier')} value={filters.deviceTier} options={DEVICE_TIER_OPTS}  onChange={setFilter('deviceTier')} />
         {activeFilterCount > 0 && (
           <button
             onClick={() => setFilters({ platform: 'all', version: 'all', os: 'all', deviceTier: 'all' })}
@@ -213,7 +217,7 @@ export default function EngineeringDashboard() {
               padding: '5px 8px',
             }}
           >
-            clear all ✕
+            {t('common.clearAll')}
           </button>
         )}
       </div>
@@ -221,22 +225,22 @@ export default function EngineeringDashboard() {
       {/* KPIs */}
       <div className="grid grid-4">
         <div className="kpi">
-          <div className="kpi-label">Crash-free sessions</div>
+          <div className="kpi-label">{t('eng.kpi.crashFree')}</div>
           <div className="kpi-value">{placeholder ?? kpis.crashFree}</div>
           <div className="kpi-delta delta-down">↓ 0.06% vs v4.12.0</div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">ANR-free sessions</div>
+          <div className="kpi-label">{t('eng.kpi.anrFree')}</div>
           <div className="kpi-value">{placeholder ?? kpis.anrFree}</div>
           <div className="kpi-delta delta-flat">flat vs prior</div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">Affected users (24h)</div>
+          <div className="kpi-label">{t('eng.kpi.affectedUsers')}</div>
           <div className="kpi-value">{placeholder ?? kpis.affectedUsers}</div>
           <div className="kpi-delta delta-down">↑ 38% week-over-week</div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">New signatures</div>
+          <div className="kpi-label">{t('eng.kpi.newSignatures')}</div>
           <div className="kpi-value">{placeholder ?? kpis.newSignatures}</div>
           <div className="kpi-delta delta-warn">first seen in v4.12.1</div>
         </div>
@@ -245,25 +249,25 @@ export default function EngineeringDashboard() {
       {/* Top Crash Signatures */}
       <div className="panel">
         <div className="panel-title">
-          <span>Top crash signatures</span>
+          <span>{t('eng.panel.signatures')}</span>
           {activeFilterCount > 0 && (
             <span style={{ color: 'var(--text-tertiary)', fontSize: 11, fontWeight: 400 }}>
-              {filteredSignatures.length} of {signatures.length} shown
+              {t('eng.shown', { filtered: filteredSignatures.length, total: signatures.length })}
             </span>
           )}
         </div>
         {filteredSignatures.length === 0 ? (
           <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 12 }}>
-            No crashes match the active filters.
+            {t('eng.noCrashes')}
           </div>
         ) : (
           <table className="tbl">
             <thead>
               <tr>
-                <th>Signature</th>
-                <th>Top frame</th>
-                <th style={{ textAlign: 'right' }}>Count</th>
-                <th style={{ textAlign: 'right' }}>Users</th>
+                <th>{t('eng.table.signature')}</th>
+                <th>{t('eng.table.topFrame')}</th>
+                <th style={{ textAlign: 'right' }}>{t('eng.table.count')}</th>
+                <th style={{ textAlign: 'right' }}>{t('eng.table.users')}</th>
                 <th style={{ textAlign: 'right' }}>Δ 24h</th>
               </tr>
             </thead>
@@ -293,10 +297,10 @@ export default function EngineeringDashboard() {
       <div className="grid grid-2 row-gap">
         <div className="panel" style={{ marginTop: 0 }}>
           <div className="panel-title">
-            Crash rate by app version
+            {t('eng.panel.versionRate')}
             {filters.version !== 'all' && (
               <span style={{ color: 'var(--accent)', fontSize: 11, fontWeight: 400 }}>
-                · {filters.version} highlighted
+                {t('common.highlighted', { version: filters.version })}
               </span>
             )}
           </div>
@@ -318,7 +322,7 @@ export default function EngineeringDashboard() {
         </div>
 
         <div className="panel" style={{ marginTop: 0 }}>
-          <div className="panel-title">Crash-free sessions trend (14d)</div>
+          <div className="panel-title">{t('eng.panel.trend')}</div>
           <div className="chart-wrap">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trend} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
@@ -350,8 +354,8 @@ export default function EngineeringDashboard() {
       {/* Stack trace */}
       <div className="panel">
         <div className="panel-title">
-          <span>Selected: EXC_BAD_ACCESS in KeychainStore.fetchSecret</span>
-          <a className="panel-action" href="#">open in Sentry ↗</a>
+          <span>{t('eng.panel.stackTrace')}</span>
+          <a className="panel-action" href="#">{t('common.openSentry')}</a>
         </div>
         <div
           className="stack"

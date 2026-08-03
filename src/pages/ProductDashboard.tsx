@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   AreaChart, Area,
   PieChart, Pie, Cell,
@@ -10,6 +11,7 @@ import { useChartColors } from '../hooks/useChartColors'
 import { useProductData, resolveDropColor } from '../hooks/useProductData'
 
 export default function ProductDashboard() {
+  const { t } = useTranslation()
   const c = useChartColors()
   const { loading, kpis, mauTrend, funnelSteps, featureAdoption, authMix } = useProductData()
   const tickStyle = { fontSize: 10, fontFamily: 'IBM Plex Mono, monospace', fill: c.text }
@@ -21,32 +23,32 @@ export default function ProductDashboard() {
   return (
     <section className="dashboard">
       <div className="dash-header">
-        <div className="dash-title">North star &amp; enrollment</div>
+        <div className="dash-title">{t('product.title')}</div>
         <div className="dash-subtitle">
-          Product leadership review · last 30 days vs prior 30
-          {loading && <span style={{ color: 'var(--text-tertiary)', fontSize: 10, marginLeft: 8 }}>syncing…</span>}
+          {t('product.subtitle')}
+          {loading && <span style={{ color: 'var(--text-tertiary)', fontSize: 10, marginLeft: 8 }}>{t('common.syncing')}</span>}
         </div>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-4">
         <div className="kpi">
-          <div className="kpi-label">Monthly active users</div>
+          <div className="kpi-label">{t('product.kpi.mau')}</div>
           <div className="kpi-value">{placeholder ?? kpis.mau}</div>
           <div className="kpi-delta delta-up">↑ 8.4% MoM</div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">Daily active users</div>
+          <div className="kpi-label">{t('product.kpi.dau')}</div>
           <div className="kpi-value">{placeholder ?? kpis.dau}</div>
           <div className="kpi-delta delta-up">↑ 6.1% MoM</div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">DAU / MAU stickiness</div>
+          <div className="kpi-label">{t('product.kpi.stickiness')}</div>
           <div className="kpi-value">{placeholder ?? kpis.stickiness}</div>
           <div className="kpi-delta delta-flat">flat (target 40%+)</div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">D30 retention</div>
+          <div className="kpi-label">{t('product.kpi.d30')}</div>
           <div className="kpi-value">{placeholder ?? kpis.d30Retention}</div>
           <div className="kpi-delta delta-up">↑ 3pp MoM</div>
         </div>
@@ -54,7 +56,7 @@ export default function ProductDashboard() {
 
       {/* MAU Trend */}
       <div className="panel">
-        <div className="panel-title">MAU trend (90 days)</div>
+        <div className="panel-title">{t('product.panel.mauTrend')}</div>
         <div className="chart-wrap">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={mauTrend} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
@@ -84,13 +86,13 @@ export default function ProductDashboard() {
 
       {/* Enrollment Funnel */}
       <div className="panel">
-        <div className="panel-title">Enrollment funnel · last 7 days</div>
+        <div className="panel-title">{t('product.panel.funnel')}</div>
         {funnelSteps.map(step => (
           <div
             key={step.label}
             className="funnel-row"
             onClick={() => setSelectedStep(prev => prev === step.label ? null : step.label)}
-            title={selectedStep === step.label ? 'Deselect step' : `Select: ${step.label}`}
+            title={selectedStep === step.label ? t('common.deselectStep') : t('common.select', { label: step.label })}
             style={{
               cursor: 'pointer',
               borderLeft: selectedStep === step.label ? '2px solid var(--accent)' : '2px solid transparent',
@@ -110,20 +112,20 @@ export default function ProductDashboard() {
           <svg className="ico" viewBox="0 0 24 24" style={{ width: 13, height: 13 }}>
             <circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" />
           </svg>
-          Biggest drop-off is QR scan failure (20%) and backup adoption (54%). Both flagged for redesign sprint.
+          {t('product.funnel.note')}
         </div>
       </div>
 
       {/* Feature Adoption + Auth Mix */}
       <div className="grid grid-2 row-gap">
         <div className="panel" style={{ marginTop: 0 }}>
-          <div className="panel-title">Feature adoption (% of MAU)</div>
+          <div className="panel-title">{t('product.panel.adoption')}</div>
           {featureAdoption.map(f => (
             <div
               key={f.label}
               className="adopt-row"
               onClick={() => setSelectedFeature(prev => prev === f.label ? null : f.label)}
-              title={selectedFeature === f.label ? 'Deselect feature' : `Select: ${f.label}`}
+              title={selectedFeature === f.label ? t('common.deselectFeature') : t('common.select', { label: f.label })}
               style={{
                 cursor: 'pointer',
                 borderLeft: selectedFeature === f.label ? '2px solid var(--accent)' : '2px solid transparent',
@@ -145,7 +147,7 @@ export default function ProductDashboard() {
         </div>
 
         <div className="panel" style={{ marginTop: 0 }}>
-          <div className="panel-title">Auth method mix (last 7d)</div>
+          <div className="panel-title">{t('product.panel.authMix')}</div>
           <div className="chart-wrap">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>

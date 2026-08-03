@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
+import '../lib/i18n'
 
 // ── Firebase mock ─────────────────────────────────────────────────────────
 // Prevents real Firebase SDK from initialising during tests.
