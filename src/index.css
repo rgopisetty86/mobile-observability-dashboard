@@ -30,6 +30,9 @@
   --chart-grid:   rgba(255,255,255,0.04);
   --chart-text:   #4d5e7a;
 
+  --bg-popup:      #13172a;
+  --border-popup:  rgba(255,255,255,0.14);
+
   /* Gradient tokens */
   --grad-accent:  linear-gradient(135deg, #4f9eff, #a78bfa);
   --grad-success: linear-gradient(135deg, #34d399, #059669);
@@ -65,6 +68,9 @@
   --teal:         #0d9488;
   --chart-grid:   rgba(0,0,0,0.06);
   --chart-text:   #6b7280;
+
+  --bg-popup:      #ffffff;
+  --border-popup:  rgba(0,0,0,0.14);
 
   --grad-accent:  linear-gradient(135deg, #2563eb, #7c3aed);
   --grad-success: linear-gradient(135deg, #059669, #0d9488);
@@ -102,6 +108,9 @@
   --chart-grid:   rgba(167,139,250,0.06);
   --chart-text:   #4a3f6e;
 
+  --bg-popup:      #14102a;
+  --border-popup:  rgba(167,139,250,0.22);
+
   --grad-accent:  linear-gradient(135deg, #a78bfa, #e879f9);
   --grad-success: linear-gradient(135deg, #34d399, #059669);
   --grad-danger:  linear-gradient(135deg, #f87171, #e11d48);
@@ -138,6 +147,9 @@
   --chart-grid:   rgba(74,222,128,0.05);
   --chart-text:   #2e5c42;
 
+  --bg-popup:      #071a0e;
+  --border-popup:  rgba(74,222,128,0.20);
+
   --grad-accent:  linear-gradient(135deg, #4ade80, #2dd4bf);
   --grad-success: linear-gradient(135deg, #34d399, #059669);
   --grad-danger:  linear-gradient(135deg, #f87171, #e11d48);
@@ -173,6 +185,9 @@
   --teal:         #2dd4bf;
   --chart-grid:   rgba(251,113,133,0.05);
   --chart-text:   #5e3040;
+
+  --bg-popup:      #1e0b10;
+  --border-popup:  rgba(251,113,133,0.22);
 
   --grad-accent:  linear-gradient(135deg, #fb7185, #f97316);
   --grad-success: linear-gradient(135deg, #34d399, #059669);
@@ -367,17 +382,16 @@ body {
 .lang-btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 10px; border-radius: 7px;
-  background: var(--bg-surface-2);
-  border: 1px solid var(--border-default);
-  color: var(--text-secondary);
+  background: var(--bg-popup);
+  border: 1px solid var(--border-popup);
+  color: var(--text-primary);
   font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
   cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s;
   white-space: nowrap;
 }
 .lang-btn:hover {
-  background: var(--bg-surface-3);
   border-color: var(--accent);
-  color: var(--text-primary);
+  color: var(--accent);
 }
 .lang-flag { font-size: 15px; line-height: 1; }
 .lang-code { font-size: 11px; letter-spacing: 0.06em; }
@@ -389,14 +403,14 @@ body {
 }
 
 .lang-dropdown {
-  position: absolute; top: calc(100% + 6px); right: 0;
-  min-width: 150px;
-  background: var(--bg-surface-2);
-  border: 1px solid var(--border-default);
+  position: absolute; top: calc(100% + 8px); right: 0;
+  min-width: 162px;
+  background: var(--bg-popup);
+  border: 1px solid var(--border-popup);
   border-radius: 10px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
-  overflow: hidden; z-index: 100;
-  animation: fadeSlideDown 0.12s ease;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.30);
+  overflow: hidden; z-index: 200;
+  animation: fadeSlideDown 0.14s ease;
 }
 @keyframes fadeSlideDown {
   from { opacity: 0; transform: translateY(-6px); }
@@ -404,17 +418,16 @@ body {
 }
 
 .lang-option {
-  display: flex; align-items: center; gap: 9px;
-  width: 100%; padding: 9px 14px;
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 10px 14px;
   background: transparent; border: none;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-size: 13px; cursor: pointer;
   transition: background 0.12s, color 0.12s;
   text-align: left;
 }
-.lang-option:hover { background: var(--bg-surface-3); color: var(--text-primary); }
-.lang-option.active { color: var(--accent); font-weight: 600; }
-.lang-option.active:hover { background: var(--accent-soft); }
+.lang-option:hover { background: var(--accent-soft); color: var(--text-primary); }
+.lang-option.active { color: var(--accent); font-weight: 600; background: var(--accent-soft); }
 .lang-option-label { flex: 1; }
 .lang-check {
   width: 14px; height: 14px; stroke: var(--accent); fill: none;
