@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   AreaChart, Area,
   XAxis, YAxis, CartesianGrid,
@@ -9,6 +10,7 @@ import { useChartColors } from '../hooks/useChartColors'
 import { useSecurityData, resolveColor, severityBadge } from '../hooks/useSecurityData'
 
 export default function SecurityDashboard() {
+  const { t } = useTranslation()
   const c = useChartColors()
   const { loading, kpis, threats, integrity, events } = useSecurityData()
   const [activeSeverity, setActiveSeverity] = useState<string | null>(null)
@@ -27,10 +29,10 @@ export default function SecurityDashboard() {
   return (
     <section className="dashboard">
       <div className="dash-header">
-        <div className="dash-title">Threat detection</div>
+        <div className="dash-title">{t('security.title')}</div>
         <div className="dash-subtitle">
-          Security operations · last 24h
-          {loading && <span style={{ color: 'var(--text-tertiary)', fontSize: 10, marginLeft: 8 }}>syncing…</span>}
+          {t('security.subtitle')}
+          {loading && <span style={{ color: 'var(--text-tertiary)', fontSize: 10, marginLeft: 8 }}>{t('common.syncing')}</span>}
         </div>
       </div>
 
@@ -41,29 +43,29 @@ export default function SecurityDashboard() {
           onClick={() => eventsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
           title="Jump to security events table"
         >
-          ● {placeholder ?? kpis.activeInvestigations} active investigations
+          ● {t('security.activeInvestigations', { count: placeholder ?? kpis.activeInvestigations })}
         </button>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-4">
         <div className="kpi">
-          <div className="kpi-label">MFA fatigue blocked</div>
+          <div className="kpi-label">{t('security.kpi.mfaFatigue')}</div>
           <div className="kpi-value warning">{placeholder ?? kpis.mfaFatigue}</div>
           <div className="kpi-delta delta-down">↑ 142% vs 7d avg</div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">Geo impossibilities</div>
+          <div className="kpi-label">{t('security.kpi.geoImposs')}</div>
           <div className="kpi-value">{placeholder ?? kpis.geoImpossibilities}</div>
           <div className="kpi-delta delta-flat">flat vs baseline</div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">Integrity violations</div>
+          <div className="kpi-label">{t('security.kpi.integrity')}</div>
           <div className="kpi-value">{placeholder ?? kpis.integrityViolations}</div>
           <div className="kpi-delta delta-up">↓ 6% vs 7d avg</div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">Accounts locked</div>
+          <div className="kpi-label">{t('security.kpi.locked')}</div>
           <div className="kpi-value">{placeholder ?? kpis.accountsLocked}</div>
           <div className="kpi-delta delta-warn">↑ 38% (correlates w/ fatigue)</div>
         </div>
@@ -72,7 +74,7 @@ export default function SecurityDashboard() {
       {/* Threat chart + Integrity breakdown */}
       <div className="grid grid-asym-2 row-gap">
         <div className="panel" style={{ marginTop: 0 }}>
-          <div className="panel-title">Threat events over 24h</div>
+          <div className="panel-title">{t('security.panel.threats')}</div>
           <div className="chart-wrap tall">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={threats} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
@@ -103,16 +105,16 @@ export default function SecurityDashboard() {
                   )}
                   wrapperStyle={{ paddingTop: 12 }}
                 />
-                <Area dataKey="fatigue"   name="MFA fatigue"         stroke={c.danger}  strokeWidth={1.5} fill="url(#fatigueGrad)"   dot={false} />
-                <Area dataKey="integrity" name="Integrity violations" stroke={c.warning} strokeWidth={1.5} fill="url(#integrityGrad)" dot={false} />
-                <Area dataKey="geo"       name="Geo anomalies"        stroke={c.purple}  strokeWidth={1.5} fill="url(#geoGrad)"       dot={false} />
+                <Area dataKey="fatigue"   name={t('security.chart.mfaFatigue')} stroke={c.danger}  strokeWidth={1.5} fill="url(#fatigueGrad)"   dot={false} />
+                <Area dataKey="integrity" name={t('security.chart.integrity')}  stroke={c.warning} strokeWidth={1.5} fill="url(#integrityGrad)" dot={false} />
+                <Area dataKey="geo"       name={t('security.chart.geo')}         stroke={c.purple}  strokeWidth={1.5} fill="url(#geoGrad)"       dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         <div className="panel" style={{ marginTop: 0 }}>
-          <div className="panel-title">Integrity violations</div>
+          <div className="panel-title">{t('security.panel.integrity')}</div>
           {integrity.map(item => (
             <div key={item.label} className="adopt-row">
               <div className="adopt-head">
@@ -133,14 +135,14 @@ export default function SecurityDashboard() {
       {/* Security Events Table */}
       <div className="panel" ref={eventsRef}>
         <div className="panel-title">
-          <span>High-severity security events</span>
-          <a className="panel-action" href="#">open in SIEM ↗</a>
+          <span>{t('security.panel.events')}</span>
+          <a className="panel-action" href="#">{t('common.openSiem')}</a>
         </div>
         <table className="tbl">
           <thead>
             <tr>
               <th style={{ width: 90 }}>
-                Severity
+                {t('security.table.severity')}
                 {activeSeverity && (
                   <button
                     onClick={() => setActiveSeverity(null)}
@@ -149,16 +151,16 @@ export default function SecurityDashboard() {
                       color: 'var(--text-secondary)', background: 'none',
                       border: 'none', padding: 0, fontFamily: 'IBM Plex Sans, sans-serif',
                     }}
-                    title="Clear filter"
+                    title={t('common.clearFilter')}
                   >
-                    ✕ clear
+                    {t('common.clear')}
                   </button>
                 )}
               </th>
-              <th>Pattern</th>
-              <th style={{ width: 120 }}>Geo</th>
-              <th style={{ width: 80 }}>Affected</th>
-              <th style={{ width: 80, textAlign: 'right' }}>Status</th>
+              <th>{t('security.table.pattern')}</th>
+              <th style={{ width: 120 }}>{t('security.table.geo')}</th>
+              <th style={{ width: 80 }}>{t('security.table.affected')}</th>
+              <th style={{ width: 80, textAlign: 'right' }}>{t('security.table.status')}</th>
             </tr>
           </thead>
           <tbody>
@@ -168,7 +170,7 @@ export default function SecurityDashboard() {
                   <button
                     className={`badge ${severityBadge(e.severity)}`}
                     onClick={() => toggleSeverity(severityBadge(e.severity))}
-                    title={activeSeverity === severityBadge(e.severity) ? 'Clear filter' : `Filter by ${e.severity}`}
+                    title={activeSeverity === severityBadge(e.severity) ? t('common.clearFilter') : t('common.filterBy', { label: e.severity })}
                     style={{
                       cursor: 'pointer', border: 'none', fontFamily: 'inherit',
                       outline: activeSeverity === severityBadge(e.severity) ? '2px solid currentColor' : 'none',
