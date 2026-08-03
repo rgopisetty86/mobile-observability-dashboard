@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
@@ -8,13 +9,6 @@ import { useChartColors } from '../hooks/useChartColors'
 import { useSREData, resolveColorToken } from '../hooks/useSREData'
 
 type GoldenSignal = 'latency' | 'traffic' | 'errors' | 'saturation'
-
-const goldenSignals: { key: GoldenSignal; label: string; color: string; description: string }[] = [
-  { key: 'latency',    label: 'Latency',    color: 'var(--accent)',   description: 'How long requests take' },
-  { key: 'traffic',    label: 'Traffic',    color: 'var(--teal)',     description: 'Demand on the system' },
-  { key: 'errors',     label: 'Errors',     color: 'var(--danger)',   description: 'Rate of failed requests' },
-  { key: 'saturation', label: 'Saturation', color: 'var(--warning)',  description: 'How "full" the service is' },
-]
 
 const panelSignals: Record<string, GoldenSignal[]> = {
   kpi_crash:      ['errors'],
@@ -28,8 +22,16 @@ const panelSignals: Record<string, GoldenSignal[]> = {
 }
 
 export default function SREDashboard() {
+  const { t } = useTranslation()
   const c = useChartColors()
   const { loading, kpis, latency, burn, deps, alerts } = useSREData()
+
+  const goldenSignals: { key: GoldenSignal; label: string; color: string; description: string }[] = [
+    { key: 'latency',    label: t('sre.signal.latency'),    color: 'var(--accent)',  description: t('sre.signal.latency.desc') },
+    { key: 'traffic',    label: t('sre.signal.traffic'),    color: 'var(--teal)',    description: t('sre.signal.traffic.desc') },
+    { key: 'errors',     label: t('sre.signal.errors'),     color: 'var(--danger)',  description: t('sre.signal.errors.desc') },
+    { key: 'saturation', label: t('sre.signal.saturation'), color: 'var(--warning)', description: t('sre.signal.saturation.desc') },
+  ]
   const [activeSeverity, setActiveSeverity] = React.useState<string | null>(null)
   const [selectedDep, setSelectedDep] = React.useState<string | null>(null)
   const [activeSignal, setActiveSignal] = React.useState<GoldenSignal | null>(null)
@@ -64,10 +66,10 @@ export default function SREDashboard() {
   return (
     <section className="dashboard">
       <div className="dash-header">
-        <div className="dash-title">Service health overview</div>
+        <div className="dash-title">{t('sre.title')}</div>
         <div className="dash-subtitle">
-          Real-time view for on-call · auto-refresh 30s
-          {loading && <span style={{ color: 'var(--text-tertiary)', fontSize: 10, marginLeft: 8 }}>syncing…</span>}
+          {t('sre.subtitle')}
+          {loading && <span style={{ color: 'var(--text-tertiary)', fontSize: 10, marginLeft: 8 }}>{t('common.syncing')}</span>}
         </div>
       </div>
 
@@ -101,7 +103,7 @@ export default function SREDashboard() {
               fontFamily: 'IBM Plex Mono, monospace',
             }}
           >
-            ✕ clear
+            {t('common.clear')}
           </button>
         )}
       </div>
@@ -109,30 +111,30 @@ export default function SREDashboard() {
       {/* KPIs */}
       <div className="grid grid-4">
         <div className="kpi" style={dim('kpi_crash')}>
-          <div className="kpi-label">Crash-free sessions</div>
+          <div className="kpi-label">{t('sre.kpi.crashFree')}</div>
           <div className="kpi-value success">{placeholder ?? kpis.crashFree}</div>
-          <div className="kpi-delta delta-flat">SLO 99.95% · 28d</div>
+          <div className="kpi-delta delta-flat">{t('sre.kpi.sloFlat')}</div>
         </div>
         <div className="kpi" style={dim('kpi_api')}>
-          <div className="kpi-label">API availability</div>
+          <div className="kpi-label">{t('sre.kpi.apiAvail')}</div>
           <div className="kpi-value success">{placeholder ?? kpis.apiAvail}</div>
-          <div className="kpi-delta delta-flat">SLO 99.95% · 28d</div>
+          <div className="kpi-delta delta-flat">{t('sre.kpi.sloFlat')}</div>
         </div>
         <div className="kpi" style={dim('kpi_push')}>
-          <div className="kpi-label">Push delivery</div>
+          <div className="kpi-label">{t('sre.kpi.pushDelivery')}</div>
           <div className="kpi-value warning">{placeholder ?? kpis.pushDelivery}</div>
-          <div className="kpi-delta delta-warn">SLO 99.5% · 7d</div>
+          <div className="kpi-delta delta-warn">{t('sre.kpi.sloWarn')}</div>
         </div>
         <div className="kpi" style={dim('kpi_ttc')}>
-          <div className="kpi-label">Time-to-code p95</div>
+          <div className="kpi-label">{t('sre.kpi.timeToCode')}</div>
           <div className="kpi-value success">{placeholder ?? kpis.timeToCode}</div>
-          <div className="kpi-delta delta-flat">SLO &lt;1.5s · 7d</div>
+          <div className="kpi-delta delta-flat">{t('sre.kpi.sloLatency')}</div>
         </div>
       </div>
 
       {/* SLO Burn Rates */}
       <div className="panel" style={dim('burn')}>
-        <div className="panel-title">SLO burn rates (1h window)</div>
+        <div className="panel-title">{t('sre.panel.burnRates')}</div>
         <div className="burn-grid">
           {burn.map(b => (
             <div key={b.label}>
@@ -149,7 +151,7 @@ export default function SREDashboard() {
       {/* Chart + Dependencies */}
       <div className="grid grid-asym-2 row-gap">
         <div className="panel" style={{ marginTop: 0, ...dim('chart_latency') }}>
-          <div className="panel-title">Push E2E latency (p50 / p95 / p99)</div>
+          <div className="panel-title">{t('sre.panel.latency')}</div>
           <div className="chart-wrap">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={latency} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
@@ -178,13 +180,13 @@ export default function SREDashboard() {
         </div>
 
         <div className="panel" style={{ marginTop: 0, ...dim('deps') }}>
-          <div className="panel-title">Dependencies</div>
+          <div className="panel-title">{t('sre.panel.deps')}</div>
           {deps.map(d => (
             <div
               key={d.name}
               className="dep-row"
               onClick={() => toggleDep(d.name)}
-              title={selectedDep === d.name ? 'Deselect' : `Inspect ${d.name}`}
+              title={selectedDep === d.name ? t('common.deselect') : t('common.inspect', { name: d.name })}
               style={{
                 cursor: 'pointer',
                 borderLeft: selectedDep === d.name ? '2px solid var(--accent)' : '2px solid transparent',
@@ -208,14 +210,14 @@ export default function SREDashboard() {
       {/* Active Alerts */}
       <div className="panel" style={dim('alerts')}>
         <div className="panel-title">
-          <span>Active alerts</span>
-          <span style={{ color: 'var(--warning)', fontSize: 11 }}>2 firing</span>
+          <span>{t('sre.panel.alerts')}</span>
+          <span style={{ color: 'var(--warning)', fontSize: 11 }}>{t('sre.alerts.firing')}</span>
         </div>
         <table className="tbl">
           <thead>
             <tr>
               <th style={{ width: 90 }}>
-                Severity
+                {t('sre.table.severity')}
                 {activeSeverity && (
                   <button
                     onClick={() => setActiveSeverity(null)}
@@ -224,14 +226,14 @@ export default function SREDashboard() {
                       color: 'var(--text-secondary)', background: 'none',
                       border: 'none', padding: 0, fontFamily: 'IBM Plex Sans, sans-serif',
                     }}
-                    title="Clear filter"
+                    title={t('common.clearFilter')}
                   >
-                    ✕ clear
+                    {t('common.clear')}
                   </button>
                 )}
               </th>
-              <th>Alert</th>
-              <th style={{ width: 100 }}>Age</th>
+              <th>{t('sre.table.alert')}</th>
+              <th style={{ width: 100 }}>{t('sre.table.age')}</th>
               <th style={{ width: 80 }} />
             </tr>
           </thead>
@@ -242,7 +244,7 @@ export default function SREDashboard() {
                   <button
                     className={`badge ${a.badge}`}
                     onClick={() => toggleSeverity(a.badge)}
-                    title={activeSeverity === a.badge ? 'Clear filter' : `Filter by ${a.badgeLabel}`}
+                    title={activeSeverity === a.badge ? t('common.clearFilter') : t('common.filterBy', { label: a.badgeLabel })}
                     style={{
                       cursor: 'pointer', border: 'none', fontFamily: 'inherit',
                       outline: activeSeverity === a.badge ? '2px solid currentColor' : 'none',

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import {
   BarChart, Bar,
   XAxis, YAxis, CartesianGrid,
@@ -9,6 +10,7 @@ import { useExecutiveData, resolveScorecardColor } from '../hooks/useExecutiveDa
 import type { Section } from '../App'
 
 export default function ExecutiveDashboard({ onNavigate }: { onNavigate?: (section: Section) => void }) {
+  const { t } = useTranslation()
   const c = useChartColors()
   const { loading, kpis, mauGrowth, reliability, security, platformMix, regions, unitEcon } = useExecutiveData()
   const tickStyle = { fontSize: 10, fontFamily: 'IBM Plex Mono, monospace', fill: c.text }
@@ -17,39 +19,39 @@ export default function ExecutiveDashboard({ onNavigate }: { onNavigate?: (secti
   return (
     <section className="dashboard">
       <div className="dash-header">
-        <div className="dash-title">Executive summary</div>
+        <div className="dash-title">{t('exec.title')}</div>
         <div className="dash-subtitle">
-          May 2026 · vs April 2026 · updated daily
-          {loading && <span style={{ color: 'var(--text-tertiary)', fontSize: 10, marginLeft: 8 }}>syncing…</span>}
+          {t('exec.subtitle')}
+          {loading && <span style={{ color: 'var(--text-tertiary)', fontSize: 10, marginLeft: 8 }}>{t('common.syncing')}</span>}
         </div>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-5">
         <div className="kpi">
-          <div className="kpi-label">MAU</div>
+          <div className="kpi-label">{t('exec.kpi.mau')}</div>
           <div className="kpi-value">{placeholder ?? kpis.mau}</div>
           <div className="kpi-delta delta-up">↑ 8.4%</div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">New installs</div>
+          <div className="kpi-label">{t('exec.kpi.installs')}</div>
           <div className="kpi-value">{placeholder ?? kpis.installs}</div>
           <div className="kpi-delta delta-up">↑ 14%</div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">D30 retention</div>
+          <div className="kpi-label">{t('exec.kpi.d30')}</div>
           <div className="kpi-value">{placeholder ?? kpis.d30Retention}</div>
           <div className="kpi-delta delta-up">↑ 3pp</div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">NPS</div>
+          <div className="kpi-label">{t('exec.kpi.nps')}</div>
           <div className="kpi-value">{placeholder ?? kpis.nps}</div>
           <div className="kpi-delta delta-up">↑ 4 pts</div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">App rating</div>
+          <div className="kpi-label">{t('exec.kpi.rating')}</div>
           <div className="kpi-value">{placeholder ?? kpis.rating}</div>
-          <div className="kpi-delta delta-flat">stable</div>
+          <div className="kpi-delta delta-flat">{t('common.stable')}</div>
         </div>
       </div>
 
@@ -57,14 +59,14 @@ export default function ExecutiveDashboard({ onNavigate }: { onNavigate?: (secti
       <div className="grid grid-2 row-gap">
         <div className="panel" style={{ marginTop: 0 }}>
           <div className="panel-title">
-            Reliability scorecard
+            {t('exec.panel.reliability')}
             {onNavigate && (
               <button
                 className="panel-action"
                 onClick={() => onNavigate('sre')}
                 style={{ cursor: 'pointer', border: 'none', background: 'none', fontFamily: 'inherit' }}
               >
-                view SRE →
+                {t('exec.viewSre')}
               </button>
             )}
           </div>
@@ -82,14 +84,14 @@ export default function ExecutiveDashboard({ onNavigate }: { onNavigate?: (secti
         </div>
         <div className="panel" style={{ marginTop: 0 }}>
           <div className="panel-title">
-            Security posture
+            {t('exec.panel.security')}
             {onNavigate && (
               <button
                 className="panel-action"
                 onClick={() => onNavigate('security')}
                 style={{ cursor: 'pointer', border: 'none', background: 'none', fontFamily: 'inherit' }}
               >
-                view Security →
+                {t('exec.viewSecurity')}
               </button>
             )}
           </div>
@@ -109,7 +111,7 @@ export default function ExecutiveDashboard({ onNavigate }: { onNavigate?: (secti
 
       {/* MAU Growth Chart */}
       <div className="panel">
-        <div className="panel-title">MAU growth (12 months)</div>
+        <div className="panel-title">{t('exec.panel.mauGrowth')}</div>
         <div className="chart-wrap short">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={mauGrowth} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
@@ -129,7 +131,7 @@ export default function ExecutiveDashboard({ onNavigate }: { onNavigate?: (secti
       {/* Platform mix + Regions + Unit economics */}
       <div className="grid grid-3 row-gap">
         <div className="panel" style={{ marginTop: 0 }}>
-          <div className="panel-title">Platform mix</div>
+          <div className="panel-title">{t('exec.panel.platformMix')}</div>
           {platformMix.map(p => (
             <div key={p.label} className="adopt-row">
               <div className="adopt-head">
@@ -144,7 +146,7 @@ export default function ExecutiveDashboard({ onNavigate }: { onNavigate?: (secti
         </div>
 
         <div className="panel" style={{ marginTop: 0 }}>
-          <div className="panel-title">Top regions</div>
+          <div className="panel-title">{t('exec.panel.regions')}</div>
           {regions.map((r, i) => (
             <div key={i} className="score-row" style={{ padding: '5px 0' }}>
               <span>{r.label}</span>
@@ -154,7 +156,7 @@ export default function ExecutiveDashboard({ onNavigate }: { onNavigate?: (secti
         </div>
 
         <div className="panel" style={{ marginTop: 0 }}>
-          <div className="panel-title">Unit economics</div>
+          <div className="panel-title">{t('exec.panel.unitEcon')}</div>
           {unitEcon.map((u, i) => (
             <div key={i} className="score-row" style={{ padding: '5px 0' }}>
               <span className="score-label">{u.label}</span>
