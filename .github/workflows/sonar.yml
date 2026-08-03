@@ -38,7 +38,9 @@ jobs:
           VITE_DATADOG_APP_KEY: ''
 
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v5
+        # Only run when both secrets are present; skip gracefully otherwise
+        if: ${{ secrets.SONAR_TOKEN != '' && secrets.SONAR_HOST_URL != '' }}
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
