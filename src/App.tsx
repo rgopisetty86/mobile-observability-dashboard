@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import './lib/i18n'
 import { useDarkMode } from './hooks/useDarkMode'
 import { ThemeContext } from './context/ThemeContext'
+import { DurationProvider } from './context/DurationContext'
 import { useDatadogMetrics } from './hooks/useDatadogMetrics'
 import Sidebar from './components/layout/Sidebar'
 import Topbar from './components/layout/Topbar'
@@ -20,14 +21,6 @@ const titleKeys: Record<Section, string> = {
   product:     'nav.product',
   security:    'nav.security',
   executive:   'nav.executive',
-}
-
-const rangeKeys: Record<Section, string> = {
-  sre:         'topbar.range.sre',
-  engineering: 'topbar.range.engineering',
-  product:     'topbar.range.product',
-  security:    'topbar.range.security',
-  executive:   'topbar.range.executive',
 }
 
 const keyMap: Record<string, Section> = {
@@ -52,23 +45,25 @@ export default function App() {
 
   return (
     <ThemeContext.Provider value={{ theme, isDark, setTheme, toggle }}>
-      <div className="app">
-        <Sidebar active={section} onSelect={setSection} />
-        <main className="main">
-          <Topbar title={t(titleKeys[section])} range={t(rangeKeys[section])} />
-          <div className="demo-banner">
-            <svg className="ico" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
-            </svg>
-            {t('demo.message')}
-          </div>
-          {section === 'sre'         && <SREDashboard         key="sre" />}
-          {section === 'engineering' && <EngineeringDashboard key="engineering" />}
-          {section === 'product'     && <ProductDashboard     key="product" />}
-          {section === 'security'    && <SecurityDashboard    key="security" />}
-          {section === 'executive'   && <ExecutiveDashboard   key="executive" onNavigate={setSection} />}
-        </main>
-      </div>
+      <DurationProvider>
+        <div className="app">
+          <Sidebar active={section} onSelect={setSection} />
+          <main className="main">
+            <Topbar title={t(titleKeys[section])} section={section} />
+            <div className="demo-banner">
+              <svg className="ico" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
+              </svg>
+              {t('demo.message')}
+            </div>
+            {section === 'sre'         && <SREDashboard         key="sre" />}
+            {section === 'engineering' && <EngineeringDashboard key="engineering" />}
+            {section === 'product'     && <ProductDashboard     key="product" />}
+            {section === 'security'    && <SecurityDashboard    key="security" />}
+            {section === 'executive'   && <ExecutiveDashboard   key="executive" onNavigate={setSection} />}
+          </main>
+        </div>
+      </DurationProvider>
     </ThemeContext.Provider>
   )
 }

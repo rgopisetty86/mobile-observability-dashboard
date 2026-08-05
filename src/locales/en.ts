@@ -17,6 +17,16 @@ const en = {
   'topbar.range.product': 'last 30d vs prior',
   'topbar.range.security': 'last 24h',
   'topbar.range.executive': 'May vs April',
+  'duration.15m': 'Last 15m',
+  'duration.1h':  'Last 1h',
+  'duration.6h':  'Last 6h',
+  'duration.24h': 'Last 24h',
+  'duration.7d':  'Last 7d',
+  'duration.14d': 'Last 14d',
+  'duration.30d': 'Last 30d',
+  'duration.90d': 'Last 90d',
+  'duration.6M':  'Last 6M',
+  'duration.1Y':  'Last 1Y',
   'demo.message': 'Sample data — numbers are illustrative. Replace queries and panel sources with your own Prometheus / Datadog / Amplitude instance to drive these live.',
 
   // ── Common ───────────────────────────────────────────────────────────────
