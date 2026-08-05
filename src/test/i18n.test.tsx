@@ -116,11 +116,11 @@ describe('Language selector — French (FR)', () => {
     await waitFor(() => expect(screen.getByText('en direct')).toBeInTheDocument())
   })
 
-  it('translates the sidebar Language label', async () => {
+  it('translates the topbar Observability breadcrumb', async () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /select language/i }))
     fireEvent.click(screen.getByText('Français'))
-    await waitFor(() => expect(screen.getByText('Langue')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Observabilité')).toBeInTheDocument())
   })
 
   it('updates the topbar button to show FR flag', async () => {
@@ -157,11 +157,11 @@ describe('Language selector — German (DE)', () => {
     })
   })
 
-  it('translates the sidebar Language label', async () => {
+  it('translates the SRE dashboard subtitle', async () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /select language/i }))
     fireEvent.click(screen.getByText('Deutsch'))
-    await waitFor(() => expect(screen.getByText('Sprache')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Echtzeit-Ansicht für Bereitschaft · Auto-Aktualisierung 30s')).toBeInTheDocument())
   })
 
   it('updates topbar button to DE', async () => {
