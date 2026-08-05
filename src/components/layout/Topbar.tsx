@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LANGUAGES, setLanguage, type LangCode } from '../../lib/i18n'
 import { useDuration, SECTION_DURATIONS } from '../../context/DurationContext'
+import { useTheme, THEMES } from '../../context/ThemeContext'
 import type { Section } from '../../App'
 
 interface TopbarProps {
@@ -12,16 +13,21 @@ interface TopbarProps {
 export default function Topbar({ title, section }: TopbarProps) {
   const { t, i18n } = useTranslation()
   const { duration, setDuration } = useDuration()
-  const [langOpen, setLangOpen] = useState(false)
-  const langRef = useRef<HTMLDivElement>(null)
+  const { theme, setTheme } = useTheme()
+  const [langOpen, setLangOpen]   = useState(false)
+  const [themeOpen, setThemeOpen] = useState(false)
+  const langRef  = useRef<HTMLDivElement>(null)
+  const themeRef = useRef<HTMLDivElement>(null)
 
   const currentLang = LANGUAGES.find(l => l.code === i18n.language) ?? LANGUAGES[0]
+  const currentTheme = THEMES.find(th => th.name === theme) ?? THEMES[0]
   const durations = SECTION_DURATIONS[section]
   const activeDur = duration[section]
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false)
+      if (langRef.current  && !langRef.current.contains(e.target as Node))  setLangOpen(false)
+      if (themeRef.current && !themeRef.current.contains(e.target as Node)) setThemeOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -30,6 +36,11 @@ export default function Topbar({ title, section }: TopbarProps) {
   const handleLangSelect = (code: LangCode) => {
     setLanguage(code)
     setLangOpen(false)
+  }
+
+  const handleThemeSelect = (name: typeof theme) => {
+    setTheme(name)
+    setThemeOpen(false)
   }
 
   return (
@@ -63,6 +74,57 @@ export default function Topbar({ title, section }: TopbarProps) {
         <span className="range-pill">
           {durations.find(o => o.value === activeDur)?.label ?? activeDur}
         </span>
+
+        {/* Theme selector */}
+        <div className="lang-selector" ref={themeRef}>
+          <button
+            className="lang-btn"
+            onClick={() => setThemeOpen(o => !o)}
+            aria-label="Select theme"
+            aria-expanded={themeOpen}
+            title="Select theme"
+          >
+            <span style={{
+              width: 12, height: 12, borderRadius: '50%',
+              background: currentTheme.swatch,
+              display: 'inline-block', flexShrink: 0,
+              boxShadow: `0 0 6px ${currentTheme.swatch}88`,
+            }} />
+            <span className="lang-code" style={{ minWidth: 36 }}>{currentTheme.label}</span>
+            <svg
+              className="lang-chevron"
+              viewBox="0 0 24 24"
+              style={{ transform: themeOpen ? 'rotate(180deg)' : 'none' }}
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+
+          {themeOpen && (
+            <div className="lang-dropdown" style={{ minWidth: 140 }}>
+              {THEMES.map(th => (
+                <button
+                  key={th.name}
+                  className={`lang-option${th.name === theme ? ' active' : ''}`}
+                  onClick={() => handleThemeSelect(th.name)}
+                >
+                  <span style={{
+                    width: 12, height: 12, borderRadius: '50%',
+                    background: th.swatch, flexShrink: 0,
+                    display: 'inline-block',
+                    boxShadow: th.name === theme ? `0 0 6px ${th.swatch}88` : 'none',
+                  }} />
+                  <span className="lang-option-label">{th.label}</span>
+                  {th.name === theme && (
+                    <svg className="lang-check" viewBox="0 0 24 24">
+                      <path d="m5 12 5 5L20 7" />
+                    </svg>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Language selector */}
         <div className="lang-selector" ref={langRef}>
