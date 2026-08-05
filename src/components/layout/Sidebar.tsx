@@ -1,7 +1,5 @@
 import { useTranslation } from 'react-i18next'
 import type { Section } from '../../App'
-import { useTheme, THEMES } from '../../context/ThemeContext'
-import { LANGUAGES, setLanguage, type LangCode } from '../../lib/i18n'
 
 interface SidebarProps {
   active: Section
@@ -54,9 +52,7 @@ const navItems: { id: Section; label: string; shortcut: string; icon: React.Reac
 ]
 
 export default function Sidebar({ active, onSelect }: SidebarProps) {
-  const { theme, setTheme } = useTheme()
-  const { t, i18n } = useTranslation()
-  const currentLang = i18n.language as LangCode
+  const { t } = useTranslation()
 
   return (
     <aside className="sidebar">
@@ -84,130 +80,6 @@ export default function Sidebar({ active, onSelect }: SidebarProps) {
       </div>
 
       <div className="sidebar-footer">
-        {/* Theme picker */}
-        <div style={{ marginBottom: 12 }}>
-          <div style={{
-            fontSize: 9.5,
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            color: 'var(--text-tertiary)',
-            fontWeight: 600,
-            marginBottom: 8,
-          }}>
-            {t('sidebar.theme')}
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
-            {THEMES.map(t => (
-              <button
-                key={t.name}
-                title={t.label}
-                onClick={() => setTheme(t.name)}
-                style={{
-                  width: '100%',
-                  aspectRatio: '1',
-                  borderRadius: 8,
-                  border: theme === t.name
-                    ? `2px solid ${t.swatch}`
-                    : '2px solid var(--border-subtle)',
-                  background: theme === t.name
-                    ? `${t.swatch}22`
-                    : 'var(--bg-surface-2)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 3,
-                  padding: '5px 2px',
-                  transition: 'all 0.15s ease',
-                  position: 'relative',
-                }}
-              >
-                <span style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: '50%',
-                  background: t.swatch,
-                  boxShadow: theme === t.name ? `0 0 8px ${t.swatch}88` : 'none',
-                  display: 'block',
-                  flexShrink: 0,
-                }} />
-                <span style={{
-                  fontSize: 8,
-                  color: theme === t.name ? t.swatch : 'var(--text-tertiary)',
-                  fontWeight: theme === t.name ? 600 : 400,
-                  lineHeight: 1,
-                  letterSpacing: '0.02em',
-                  whiteSpace: 'nowrap',
-                }}>
-                  {t.label}
-                </span>
-                {theme === t.name && (
-                  <span style={{
-                    position: 'absolute',
-                    top: 3,
-                    right: 3,
-                    width: 5,
-                    height: 5,
-                    borderRadius: '50%',
-                    background: t.swatch,
-                  }} />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Language picker */}
-        <div style={{ marginBottom: 12 }}>
-          <div style={{
-            fontSize: 9.5,
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            color: 'var(--text-tertiary)',
-            fontWeight: 600,
-            marginBottom: 8,
-          }}>
-            {t('sidebar.language')}
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4 }}>
-            {LANGUAGES.map(lang => (
-              <button
-                key={lang.code}
-                title={lang.label}
-                onClick={() => setLanguage(lang.code)}
-                style={{
-                  width: '100%',
-                  padding: '5px 2px',
-                  borderRadius: 7,
-                  border: currentLang === lang.code
-                    ? '2px solid var(--accent)'
-                    : '2px solid var(--border-subtle)',
-                  background: currentLang === lang.code
-                    ? 'var(--accent-soft)'
-                    : 'var(--bg-surface-2)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 2,
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                <span style={{ fontSize: 14, lineHeight: 1 }}>{lang.flag}</span>
-                <span style={{
-                  fontSize: 8,
-                  color: currentLang === lang.code ? 'var(--accent)' : 'var(--text-tertiary)',
-                  fontWeight: currentLang === lang.code ? 600 : 400,
-                  letterSpacing: '0.03em',
-                }}>
-                  {lang.code.toUpperCase()}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
           <span>{t('sidebar.version')}</span>
           <span style={{ color: 'var(--text-tertiary)', fontSize: 10 }}>{t('sidebar.keys')}</span>

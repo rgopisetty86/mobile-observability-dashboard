@@ -111,33 +111,34 @@ describe('App — keyboard navigation', () => {
 
 // ── Theme toggle ──────────────────────────────────────────────────────────
 
-describe('App — theme picker', () => {
-  it('renders all 5 theme swatch buttons', () => {
+describe('App — theme picker (Topbar dropdown)', () => {
+  it('renders the theme selector button in the topbar', () => {
     render(<App />)
-    expect(screen.getByRole('button', { name: 'Dark' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Light' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Midnight' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Forest' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Dusk' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /select theme/i })).toBeInTheDocument()
   })
 
-  it('clicking each theme swatch does not throw', () => {
+  it('opens dropdown and shows all 5 themes', () => {
     render(<App />)
-    const swatches = ['Dark', 'Light', 'Midnight', 'Forest', 'Dusk']
-    for (const name of swatches) {
-      expect(() =>
-        fireEvent.click(screen.getByRole('button', { name }))
-      ).not.toThrow()
-    }
+    fireEvent.click(screen.getByRole('button', { name: /select theme/i }))
+    expect(screen.getByRole('button', { name: /^dark$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^light$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^midnight$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^forest$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^dusk$/i })).toBeInTheDocument()
   })
 
-  it('clicking a theme swatch sets data-theme on the document root', () => {
+  it('selecting a theme sets data-theme on the document root', () => {
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: 'Midnight' }))
+    fireEvent.click(screen.getByRole('button', { name: /select theme/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^midnight$/i }))
     expect(document.documentElement.getAttribute('data-theme')).toBe('midnight')
-    fireEvent.click(screen.getByRole('button', { name: 'Light' }))
+
+    fireEvent.click(screen.getByRole('button', { name: /select theme/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^light$/i }))
     expect(document.documentElement.getAttribute('data-theme')).toBe('light')
-    fireEvent.click(screen.getByRole('button', { name: 'Dark' }))
+
+    fireEvent.click(screen.getByRole('button', { name: /select theme/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^dark$/i }))
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
   })
 })
