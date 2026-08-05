@@ -1,30 +1,35 @@
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LANGUAGES, setLanguage, type LangCode } from '../../lib/i18n'
+import { useDuration, SECTION_DURATIONS } from '../../context/DurationContext'
+import type { Section } from '../../App'
 
 interface TopbarProps {
   title: string
-  range: string
+  section: Section
 }
 
-export default function Topbar({ title, range }: TopbarProps) {
+export default function Topbar({ title, section }: TopbarProps) {
   const { t, i18n } = useTranslation()
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const { duration, setDuration } = useDuration()
+  const [langOpen, setLangOpen] = useState(false)
+  const langRef = useRef<HTMLDivElement>(null)
 
   const currentLang = LANGUAGES.find(l => l.code === i18n.language) ?? LANGUAGES[0]
+  const durations = SECTION_DURATIONS[section]
+  const activeDur = duration[section]
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  const handleSelect = (code: LangCode) => {
+  const handleLangSelect = (code: LangCode) => {
     setLanguage(code)
-    setOpen(false)
+    setLangOpen(false)
   }
 
   return (
@@ -37,36 +42,54 @@ export default function Topbar({ title, range }: TopbarProps) {
           </svg>
           <span className="crumb-current">{title}</span>
         </div>
+
+        {/* Duration picker */}
+        <div className="dur-picker" role="group" aria-label="Select time range">
+          {durations.map(opt => (
+            <button
+              key={opt.value}
+              className={`dur-pill${activeDur === opt.value ? ' active' : ''}`}
+              onClick={() => setDuration(section, opt.value)}
+              aria-pressed={activeDur === opt.value}
+            >
+              {opt.value}
+            </button>
+          ))}
+        </div>
       </div>
+
       <div className="topbar-right">
-        <span className="range-pill">{range}</span>
+        {/* Active duration label */}
+        <span className="range-pill">
+          {durations.find(o => o.value === activeDur)?.label ?? activeDur}
+        </span>
 
         {/* Language selector */}
-        <div className="lang-selector" ref={ref}>
+        <div className="lang-selector" ref={langRef}>
           <button
             className="lang-btn"
-            onClick={() => setOpen(o => !o)}
+            onClick={() => setLangOpen(o => !o)}
             aria-label="Select language"
-            aria-expanded={open}
+            aria-expanded={langOpen}
           >
             <span className="lang-flag">{currentLang.flag}</span>
             <span className="lang-code">{currentLang.code.toUpperCase()}</span>
             <svg
               className="lang-chevron"
               viewBox="0 0 24 24"
-              style={{ transform: open ? 'rotate(180deg)' : 'none' }}
+              style={{ transform: langOpen ? 'rotate(180deg)' : 'none' }}
             >
               <path d="m6 9 6 6 6-6" />
             </svg>
           </button>
 
-          {open && (
+          {langOpen && (
             <div className="lang-dropdown">
               {LANGUAGES.map(lang => (
                 <button
                   key={lang.code}
                   className={`lang-option${lang.code === i18n.language ? ' active' : ''}`}
-                  onClick={() => handleSelect(lang.code)}
+                  onClick={() => handleLangSelect(lang.code)}
                 >
                   <span className="lang-flag">{lang.flag}</span>
                   <span className="lang-option-label">{lang.label}</span>
